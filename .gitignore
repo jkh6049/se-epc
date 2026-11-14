@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.log
+# 회사 데이터는 저장소에 올리지 않음 (서버에만 저장)
+data/
+*.local.html

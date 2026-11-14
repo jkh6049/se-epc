@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "se-epc",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+  // 화면 파일(dist): / = 기존 대시보드(legacy), /next/ = React 신규 화면
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // 공용 데이터 저장소 + 웹소켓 중계 (팀 전체 = 객체 1개)
+  "durable_objects": {
+    "bindings": [{ "name": "HUB", "class_name": "Hub" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Hub"] }],
+  "routes": [
+    { "pattern": "se-epc.com", "custom_domain": true },
+    { "pattern": "www.se-epc.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}
