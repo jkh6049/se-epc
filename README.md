@@ -50,5 +50,9 @@ npm run seed -- https://se-epc.com --force
 
 ## 배포
 
-GitHub `main` 브랜치에 push → Cloudflare Workers Builds가 `npm run build` → `npx wrangler deploy` 자동 실행.
+```bash
+npm run deploy           # 빌드 + Cloudflare 배포 (wrangler login 필요)
+```
+
 도메인 se-epc.com / www.se-epc.com 은 wrangler.jsonc 의 routes(custom_domain)로 연결.
+(예정) Cloudflare 대시보드에서 이 저장소를 Workers Builds 로 연결하면 `main` push 시 자동 배포: 빌드 `npm run build`, 배포 `npx wrangler deploy`.
