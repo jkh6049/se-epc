@@ -9,6 +9,7 @@
 //   { "c": "tasks", "id": "...", "add":   { ...레코드 전체 } }   서버에 없을 때만 추가 (이미 있으면 건너뜀)
 //   { "c": "tasks", "id": "...", "set":   { 칸: 값 } }          기존 레코드의 해당 칸만 바꿈 (나머지 칸은 서버 최신값 유지)
 //   { "c": "tasks", "id": "...", "append":{ 칸: "문장" } }       기존 글 끝에 줄바꿈 후 덧붙임 (같은 문장이 이미 있으면 건너뜀)
+//   c 에 "erp" 를 쓰면 실적관리(ERP) 현장 레코드 (id = 실적관리 현장 id)
 //   set·append 는 한 항목에 같이 쓸 수 있음. 대상 레코드가 서버에 없으면 경고 후 건너뜀
 //
 // 안전장치
@@ -32,7 +33,8 @@ let pw = process.env.SITE_PASSWORD || "";
 if (!pw && fs.existsSync(".dev.vars")) pw = (fs.readFileSync(".dev.vars", "utf8").match(/^SITE_PASSWORD\s*=\s*"?([^"\r\n]*)"?/m) || [])[1] || "";
 const headers = pw ? { "x-site-password": pw } : {};
 
-const COLS = ["projects", "ms", "pay", "tasks", "recur", "events", "plants", "insp", "as", "vendors", "logs", "docs", "bills", "claims", "sites", "weekly", "forms", "subs", "replies"];
+const COLS = ["projects", "ms", "pay", "tasks", "recur", "events", "plants", "insp", "as", "vendors", "logs", "docs", "bills", "claims", "sites", "weekly", "forms", "subs", "replies", "erp"];
+// erp = 실적관리 현장 (서버 내보내기에서는 erp.projects 안에 있음)
 const items = JSON.parse(fs.readFileSync(file, "utf8"));
 
 // 1) 서버 최신 데이터
@@ -43,7 +45,7 @@ if (!res.ok) {
 }
 const raw = await res.text();
 const cur = JSON.parse(raw);
-const find = (c, id) => (cur[c] || []).find((o) => o && String(o.id) === String(id));
+const find = (c, id) => (c === "erp" ? (cur.erp && cur.erp.projects) || [] : cur[c] || []).find((o) => o && String(o.id) === String(id));
 
 // 2) 변경분 계산
 const now = new Date().toISOString();
