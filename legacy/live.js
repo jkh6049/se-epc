@@ -126,7 +126,15 @@
     ws.onclose = function () { L.ready = false; L.ws = null; paint(); retry(); };
     ws.onerror = function () { try { ws.close(); } catch (e) {} };
   }
-  function retry() { var t = Math.min(15000, 1000 * Math.pow(2, L.retry++)); setTimeout(connect, t); }
+  function retry() {
+    var t = Math.min(15000, 1000 * Math.pow(2, L.retry++));
+    setTimeout(function () {
+      // 로그인(공용 비밀번호)이 풀렸으면 새로고침 → 비밀번호 입력창으로
+      fetch("/api/health", { cache: "no-store" }).then(function (r) {
+        if (r.status === 401) location.reload(); else connect();
+      }, connect);
+    }, t);
+  }
 
   // 끊김 감지·이름 변경 반영
   setInterval(function () {

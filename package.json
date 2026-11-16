@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run build && wrangler dev",
+    "dev:next": "vite",
     "build": "vite build && node scripts/copy-legacy.mjs",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",

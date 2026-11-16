@@ -3,10 +3,12 @@
 // 도착 순서대로 번호(seq)가 붙고, 같은 레코드는 나중에 도착한 수정이 최종본이 됨.
 import { DurableObject } from "cloudflare:workers";
 import { backupToRecs, recsToBackup, type Rec } from "./shape";
+import { gate } from "./auth";
 
 export interface Env {
   HUB: DurableObjectNamespace<Hub>;
   ASSETS: Fetcher;
+  SITE_PASSWORD?: string;
 }
 
 type Att = { cid: string; name: string; color: string; page: string };
@@ -21,6 +23,9 @@ const json = (o: unknown, status = 200) =>
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
+    // 공용 비밀번호 확인 (화면·API 전부)
+    const blocked = await gate(req, env.SITE_PASSWORD);
+    if (blocked) return blocked;
     if (url.pathname.startsWith("/api/")) {
       const hub = env.HUB.get(env.HUB.idFromName("main"));
       return hub.fetch(req);

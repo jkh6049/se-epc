@@ -7,7 +7,8 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    // 모든 요청이 먼저 Worker(공용 비밀번호 검사)를 거침
+    "run_worker_first": true
   },
   // 공용 데이터 저장소 + 웹소켓 중계 (팀 전체 = 객체 1개)
   "durable_objects": {
