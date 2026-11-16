@@ -791,8 +791,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><@@/script>
 <style>
-:root{--bg:#f3f5f8;--card:#fff;--line:#e2e7ee;--line2:#eef1f5;--text:#0f172a;--sub:#475569;--muted:#94a3b8;--brand:#1d4ed8;--brand-l:#eef3ff;--top:#0f1f3d;--top2:#1b2d52;--top3:#2c4170;--th:#f7f9fc;--hover:#fafcff;--input:#fff;--ok:#15803d;--ok-l:#ecfdf3;--warn:#b45309;--warn-l:#fff7e6;--err:#b91c1c;--err-l:#fef2f2;--info-l:#f1f5f9;--track:#e8edf4;--r:10px;color-scheme:light}
-[data-theme=dark]{--bg:#0b1220;--card:#111a2b;--line:#24324c;--line2:#1b263a;--text:#e5ecf6;--sub:#a3b3ca;--muted:#6b7b94;--brand:#7aa7ff;--brand-l:#17284a;--top:#070d19;--top2:#14213b;--top3:#253a63;--th:#152036;--hover:#14203a;--input:#0e1626;--ok:#4ade80;--ok-l:#0f2a1c;--warn:#fbbf24;--warn-l:#2b2110;--err:#f87171;--err-l:#2e1414;--info-l:#18233a;--track:#22304a;color-scheme:dark}
+:root{--grid:#d3d9e2;--grid2:#a9b4c3;--bg:#f3f5f8;--card:#fff;--line:#e2e7ee;--line2:#eef1f5;--text:#0f172a;--sub:#475569;--muted:#94a3b8;--brand:#1d4ed8;--brand-l:#eef3ff;--top:#0f1f3d;--top2:#1b2d52;--top3:#2c4170;--th:#f7f9fc;--hover:#fafcff;--input:#fff;--ok:#15803d;--ok-l:#ecfdf3;--warn:#b45309;--warn-l:#fff7e6;--err:#b91c1c;--err-l:#fef2f2;--info-l:#f1f5f9;--track:#e8edf4;--r:10px;color-scheme:light}
+[data-theme=dark]{--grid:#2f3d58;--grid2:#4a5d82;--bg:#0b1220;--card:#111a2b;--line:#24324c;--line2:#1b263a;--text:#e5ecf6;--sub:#a3b3ca;--muted:#6b7b94;--brand:#7aa7ff;--brand-l:#17284a;--top:#070d19;--top2:#14213b;--top3:#253a63;--th:#152036;--hover:#14203a;--input:#0e1626;--ok:#4ade80;--ok-l:#0f2a1c;--warn:#fbbf24;--warn-l:#2b2110;--err:#f87171;--err-l:#2e1414;--info-l:#18233a;--track:#22304a;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 .head{position:sticky;top:0;z-index:20}
@@ -838,16 +838,19 @@ main{padding:18px 24px 60px;max-width:1680px;margin:0 auto}
 .card-h .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pg{display:inline-block;font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-l);border-radius:5px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 .scroll{overflow-x:auto}
-table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-table.t th{background:var(--th);color:var(--sub);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--line);border-top:1px solid var(--line);padding:7px 8px;white-space:nowrap;text-align:center}
-table.t td{border-bottom:1px solid var(--line2);padding:6px 8px;white-space:nowrap}
+/* v41 표 경계: 모든 칸에 세로·가로 선, 머리글·합계·묶음 경계는 진한 선 */
+table.t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;border:1px solid var(--grid2)}
+table.t th{background:var(--th);color:var(--sub);font-weight:600;font-size:11.5px;border:1px solid var(--grid);padding:7px 8px;white-space:nowrap;text-align:center}
+table.t thead tr:last-child th{border-bottom:1.5px solid var(--grid2)}
+table.t td{border:1px solid var(--grid);padding:6px 8px;white-space:nowrap}
 table.t td.n{text-align:right}
 table.t td.c{text-align:center}
 table.t td.w{white-space:normal;min-width:160px}
-table.t tr.sum td{font-weight:700;background:var(--th);border-top:1px solid var(--line)}
+table.t tr.sum td{font-weight:700;background:var(--th);border-top:2px solid var(--grid2)}
 table.t tr.sub td{font-weight:600;background:var(--hover)}
-table.t th.ref,table.t td.ref{color:var(--muted);border-left:1px dashed var(--line)}
+table.t th.ref,table.t td.ref{color:var(--muted);border-left:1.5px dashed var(--grid2)}
 table.t tbody tr:hover td{background:var(--hover)}
+.mon41{margin-top:8px;line-height:1.6}
 td.click{cursor:pointer;color:var(--brand)}
 td.click:hover{text-decoration:underline}
 .badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;line-height:17px;white-space:nowrap}
@@ -1588,12 +1591,14 @@ function buildReport(projects,D,opt){
   for(const c of list){const cd=s(c.p.contractDate);if(cd.slice(0,7)===ym&&cd<=D)o+=c.contract;const row=c.map[ym];if(row){r+=row.rev;pl+=row.pl}
    {const a=collAt(c,ym,true),pv=ym===M?planIn(c,ym):null;co+=pv!=null?Math.max(a,pv):a}ar+=ym===M?issuedAt(c,ym)-collAt(c,ym,false):arNow40(c,ym);if(cd&&cd<=limOf(c,ym))bk+=c.contract-revCumAt(c,ym)}
   mon.order.push(o);mon.rev.push(r);mon.pl.push(pl);mon.coll.push(co);mon.ar.push(ar);mon.backlog.push(bk)}
+ // v41: 매출·매출이익은 '실적관리 — 프로젝트별 월별' 합계와 같은 숫자 (구분손익 올린 달 = 재무, 나머지 = ERP 결산·추정 · 기본 범위면 기타·미연결 포함)
+ const act=actYear41(list,cols,M,!projects.__rs);cols.forEach((ym,i)=>{if(ym>M)return;mon.rev[i]=act.tR[i];mon.pl[i]=act.tR[i]-act.tC[i]});
  const sum=a=>a.reduce((t,v)=>t+(v||0),0),at=a=>a[cols.indexOf(M)];
  const tot={order:sum(mon.order),rev:sum(mon.rev),pl:sum(mon.pl),coll:sum(mon.coll),ar:at(mon.ar),backlog:at(mon.backlog)};
  const T=(k,f)=>list.filter(f||(()=>true)).reduce((t,c)=>t+(c[k]||0),0);
  const kpi={n:projects.__rs?list.length:list.filter(c=>c.p.countIn!==false).length,focus:list.filter(c=>["R","A"].includes(c.p.rag)).length,contract:T("contract"),revCum:T("revCum"),revCur:T("revCur"),backlog:T("backlog"),collMonth:T("monthColl"),ar:T("ar"),
   avg:T("contract")?T("revCum")/T("contract")*100:0,nFix:list.filter(c=>c.p.status!=="협의중").length,nNeg:list.filter(c=>c.p.status==="협의중").length};
- return{D,M,list,cols,mon,tot,kpi}}
+ return{D,M,list,cols,mon,tot,kpi,act}}
 /* ---------- 자금계획 (VAT 별도 기준 · 실적 = 기준월까지, 계획 = 이후 월) ---------- */
 function fundSpread(total,act,user,months,M,w){const cells={};let actSum=0;
  months.forEach(ym=>{if(ym<M){const v=act[ym]||0;actSum+=v;cells[ym]={v,k:"act",cm:0}}});
@@ -1658,7 +1663,7 @@ const MD=d=>d?(+d.slice(5,7))+"/"+(+d.slice(8,10)):"";
 const KD=d=>d?d.slice(0,4)+"년 "+(+d.slice(5,7))+"월 "+(+d.slice(8,10))+"일":"";
 const pctOf=(a,b)=>b?a/b*100:0;
 
-function applyTheme(){const t=DB.settings.theme||(matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t;$("btnTheme").textContent=t==="dark"?"☀ 라이트":"☾ 다크"}
+function applyTheme(){let pt="";try{if(EMB)pt=window.parent.document.documentElement.getAttribute("data-theme")||""}catch(e){}/* v42: 대시보드 안에서는 바깥 테마만 따름 (DB.settings는 팀 공유라 다른 사람 테마가 섞였음) */const t=pt==="dark"||pt==="light"?pt:(!EMB&&DB.settings.theme)||(matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.dataset.theme=t;$("btnTheme").textContent=t==="dark"?"☀ 라이트":"☾ 다크"}
 function toggleTheme(){DB.settings.theme=document.documentElement.dataset.theme==="dark"?"light":"dark";save();applyTheme()}
 function shiftWeek(n){DB.settings.rd=addDays(WI().mon,n);DB.settings.cut="";save();render()}
 function thisWeek(){DB.settings.rd=mondayOf(todayISO());DB.settings.cut="";save();render()}
@@ -1720,7 +1725,7 @@ function rWeekly(){
   <div class="kpi"><div class="l">진행 현장 건수</div><div class="v">${k.n}<small>개소</small></div><div class="s">${pv("n",x=>x+"개소")}</div></div>
   <div class="kpi"><div class="l">중점 관리 현장 (RAG R·A)</div><div class="v">${k.focus}<small>개소</small></div><div class="s">${pv("focus",x=>x+"개소")}</div></div>
   <div class="kpi"><div class="l">계약 금액 합계</div><div class="v">${(k.contract/1e8).toFixed(1)}<small>억원</small></div><div class="s">${pv("contract",x=>(x/1e8).toFixed(1)+"억원")}</div></div>
-  <div class="kpi"><div class="l">평균 실적 공정률 / 매출 발생 합계</div><div class="v">${P(k.avg,1)}<small>%</small> / ${(k.revCum/1e8).toFixed(2)}<small>억원</small></div><div class="s">${pk?`전주 ${P(pk.avg,1)}% / ${(pk.revCum/1e8).toFixed(2)}억원`:"전주 —"}</div></div>
+  <div class="kpi"><div class="l" title="공정률 = 누적매출 ÷ 계약금액 · 누적매출 = 계약 이후 전체 기간 (올해 실적은 아래 월간 누적 실적)">평균 실적 공정률 / 누적 매출(계약 이후)</div><div class="v">${P(k.avg,1)}<small>%</small> / ${(k.revCum/1e8).toFixed(2)}<small>억원</small></div><div class="s">${pk?`전주 ${P(pk.avg,1)}% / ${(pk.revCum/1e8).toFixed(2)}억원`:"전주 —"}</div></div>
  </div></div>`;
  // 7p
  h+=`<div class="card"><div class="card-h"><div><h2>프로젝트 진행현황 (현장관리)</h2><div class="desc">실적공정률 = 누적매출 ÷ 계약금액 (매출 기준, 자동) · 목표 GP = 100 − 실행율(ERP) · 계획공정률·RAG·현안은 표에서 바로 수정 · 현장 공정률은 참고용(복사 제외)</div></div><div class="acts"><button class="btn s p" onclick="pptImg('site')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('site')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
@@ -1740,7 +1745,7 @@ function rWeekly(){
  R.list.forEach((c,i)=>{const p=c.p,y=yrOf(c);S.c+=c.contract;S.pv+=y.py.rev;S.cu+=c.revCur;S.cm+=y.revY;S.bk+=c.backlog;S.mc+=c.monthColl;S.cc+=y.collY;S.ar+=c.ar;
   const pr=ps&&ps.rows&&ps.rows[p.id];const dv=pr?c.revCum-pr.revCum:null;
   h+=`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${U(y.py.rev,1)}</td><td class="c">${c.issueDates.map(MD).join(", ")}</td><td class="n">${U(c.revCur,1)}</td><td class="n click" onclick="showBasis('${p.id}')">${U(y.revY,1)}</td><td class="n">${U(c.backlog)}</td><td class="c">${c.collDates.map(MD).join(", ")}</td><td class="n">${U(c.monthColl,1)}</td><td class="n">${U(y.collY,1)}</td><td class="n">${U(c.ar,1)}</td><td data-copy="${esc(p.memo)}"><input class="ci" value="${esc(p.memo)}" onchange="setPF('${p.id}','memo',this.value,1)" placeholder="—"></td><td class="c ref">${c.st?`<span class="badge ${c.st==="확정"?"b-fix":c.st==="수기"?"b-info":"b-est"}" title="${c.st==="수기"?"ERP 미등록 현장 — PPT·실적현황 기준으로 직접 입력한 값":c.st==="확정"?"이번 달 매출이 ERP 진행매출월별 마감값 그대로입니다":"이번 달은 ERP 월마감 전이라, 기준일까지의 전표(원가)로 진행률·매출을 계산한 값입니다. 마감 후 진행매출월별을 올리면 확정값으로 바뀝니다"}">${c.st}</span>`:""}</td><td class="n ref">${dv==null?"—":(dv>=0?"+":"")+U(dv)}</td></tr>`});
- h+=`<tr class="sum"><td></td><td></td><td>합계</td><td class="n">${U(S.c)}</td><td class="n">${U(S.pv,1)}</td><td></td><td class="n">${U(S.cu,1)}</td><td class="n">${U(S.cm,1)}</td><td class="n">${U(S.bk)}</td><td></td><td class="n">${U(S.mc,1)}</td><td class="n">${U(S.cc,1)}</td><td class="n">${U(S.ar,1)}</td><td></td><td class="ref"></td><td class="ref"></td></tr></tbody></table></div></div>`;
+ h+=`<tr class="sum"><td></td><td></td><td title="현장(프로젝트) 합계 — 구분손익 기타(전력·O&M 등)는 제외. 사업부 전체 매출은 아래 '월간 누적 실적'">합계</td><td class="n">${U(S.c)}</td><td class="n">${U(S.pv,1)}</td><td></td><td class="n">${U(S.cu,1)}</td><td class="n">${U(S.cm,1)}</td><td class="n">${U(S.bk)}</td><td></td><td class="n">${U(S.mc,1)}</td><td class="n">${U(S.cc,1)}</td><td class="n">${U(S.ar,1)}</td><td></td><td class="ref"></td><td class="ref"></td></tr></tbody></table></div></div>`;
  h+=yearPerf(R,est.length>0);
  const lab=R.cols.map(ym=>{const m=+ym.slice(5);return ym<R.M?m+"월":ym===R.M?m+"월"+(est.length?"(예상)":""):m+"월(예상)"});
  const rowM=(nm,a,tot)=>`<tr><td>${nm}</td>${a.map(v=>`<td class="n">${v==null?"":U(v,1)}</td>`).join("")}<td class="n"><b>${U(tot,1)}</b></td></tr>`;
@@ -1748,7 +1753,7 @@ function rWeekly(){
  <div class="scroll"><table class="t" id="t8m"><thead><tr><th>구분</th>${lab.map(l=>`<th>${l}</th>`).join("")}<th>누적 총액</th></tr></thead><tbody>`+
  rowM("수주",R.mon.order,R.tot.order)+rowM("매출",R.mon.rev,R.tot.rev)+rowM("매출이익",R.mon.pl,R.tot.pl)+rowM("수금",R.mon.coll,R.tot.coll)+
  `<tr><td title="그 달까지 발행한 계산서 중 기준일 현재 아직 못 받은 금액 (나중에 입금되면 0). 칸을 누르면 어느 청구인지 표시">미수금</td>${R.mon.ar.map((v,i)=>`<td class="n${v?" click":""}" ${v?`onclick="showAR40('${R.cols[i]}')" title="눌러서 구성 보기"`:""}>${v==null?"":U(v,1)}</td>`).join("")}<td class="n"><b>${U(R.tot.ar,1)}</b></td></tr>`+
- rowM("수주 잔",R.mon.backlog,R.tot.backlog)+`</tbody></table></div></div>`;
+ rowM("수주 잔",R.mon.backlog,R.tot.backlog)+`</tbody></table></div>`+monNote41(R)+`</div>`;
  // 9p
  const arRows=[];R.list.forEach(c=>c.bills.forEach(b=>{const rest=b.amt-(b.collected||0);if(b.date&&b.date<=w.cutoff&&rest>0)arRows.push({c,b,rest})}));
  h+=`<div class="card"><div class="card-h"><div><h2>RM / AM</h2><div class="desc">미수 채권은 채권 발행 데이터 기준 자동 · 활동 내역은 한 줄에 "MM/DD 내용"으로 입력하면 PPT 일자/내용 2열로 복사</div></div><div class="acts"><button class="btn s" onclick="copyTable('t9')">미수 표 복사</button></div></div>`+
@@ -1771,21 +1776,30 @@ function segPick35(){const G=SEGP();if(!G)return;const i=document.createElement(
  i.onchange=()=>G.import(i.files).then(m=>{toast(m);render()},e=>alert("구분손익 업로드 실패: "+e.message));i.click()}
 function segLink35(code,id){const G=SEGP();if(!G)return;G.link(code,id);render()}
 function setGrp35(id,v){if(v==="__n"){v=prompt("새 구분 이름 (예: 민간, 공공 수의, 기타 입찰)");if(!v||!v.trim()){render();return}}const p=proj(id);if(!p)return;p.pfGrp=v.trim();save();render()}
-function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,cols=R.cols;
- const segM=cols.map(ym=>ym<=M&&G?G.month(ym):null);const nSeg=segM.filter(Boolean).length;
+/* v41: 월별 실적 단일 계산 — 주간보고 월간 누적 · 프로젝트별 월별 · 경영보고가 모두 이 결과를 씀 (대시보드 실적 분석·실적현황도 같은 규칙: act41Month)
+ * 현장 = 구분손익 올린 달은 그 현장에 연결된 프로젝트 코드 진행매출, 안 올린 달은 ERP 결산(마감 전이면 전표 추정)
+ * 기타 = 구분손익 중 진행매출(SI) 외 계정 · 미연결 = 어느 현장에도 안 붙은 코드 → 기본 범위(full)일 때만 합계에 포함, 열람 프로젝트를 고르면 고른 현장만 */
+function actYear41(list,cols,M,full){const G=SEGP();const segM=cols.map(ym=>ym<=M&&G?G.month(ym):null);
+ const rowsP=list.map(c=>({c,m:cols.map((ym,i)=>{if(ym>M)return null;if(segM[i]){const v=G.proj(ym,c.p.id)||{rev:0,cost:0};return{rev:v.rev,cost:v.cost,k:"seg"}}const r=c.map[ym];return r?{rev:r.rev,cost:r.cost,k:r.st}:{rev:0,cost:0}})}));
+ const pS=f=>cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i][f]:0),0));const pR=pS("rev"),pC=pS("cost");
+ const eR=segM.map(g=>g&&full?g.etcRev:null),eC=segM.map(g=>g&&full?g.etcCost:null);
+ const uR=segM.map((g,i)=>g&&full?g.siRev-pR[i]:null),uC=segM.map((g,i)=>g&&full?g.siCost-pC[i]:null);
+ const T=(a,b,c)=>cols.map((ym,i)=>ym>M?null:a[i]+(b[i]||0)+(c[i]||0));
+ const iM=cols.indexOf(M),estM=iM>=0&&!segM[iM]&&rowsP.some(r=>r.m[iM]&&r.m[iM].k==="추정");
+ return{full,segM,rowsP,pR,pC,eR,eC,uR,uC,tR:T(pR,eR,uR),tC:T(pC,eC,uC),iM,estM}}
+function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,cols=R.cols,A=R.act,full=A.full;
+ const segM=A.segM;const nSeg=segM.filter(Boolean).length;
  const sum=a=>a.reduce((t,v)=>t+(v||0),0);
- const rowsP=R.list.map(c=>{const y=yrOf(c);const m=cols.map((ym,i)=>{if(ym>M)return null;if(segM[i]){const v=G.proj(ym,c.p.id)||{rev:0,cost:0};return{rev:v.rev,cost:v.cost,k:"seg"}}const r=c.map[ym];return r?{rev:r.rev,cost:r.cost,k:r.st}:{rev:0,cost:0}});
-  return{c,y,m,coll:cols.map(ym=>ym>M?null:collAt(c,ym,true)),g:PFG(c.p)}});
+ const rowsP=R.list.map((c,j)=>({c,y:yrOf(c),m:A.rowsP[j].m,coll:cols.map(ym=>ym>M?null:collAt(c,ym,true)),g:PFG(c.p)}));
  const gs=[...new Set(rowsP.map(r=>r.g))].sort((a,b)=>(a==="공공 입찰"?0:1)-(b==="공공 입찰"?0:1));
  const allG=[...new Set(["공공 입찰","민간",...DB.projects.map(PFG)])];
  // 기타 · 미연결
  const ord=["전력","O&M","용역","상품","제품","임대"],oi=c=>(ord.indexOf(c)+1)||99;
  const cats=[...new Set(segM.filter(Boolean).flatMap(g=>Object.keys(g.cats).filter(k=>Math.abs(g.cats[k].rev)>=1||Math.abs(g.cats[k].cost)>=1)))].sort((a,b)=>oi(a)-oi(b));
  const eLab="기타 ("+(cats.length?cats.join(" + "):"전력 + O&M")+")";
- const eR=segM.map((g,i)=>cols[i]>M?null:g?g.etcRev:null),eC=segM.map((g,i)=>cols[i]>M?null:g?g.etcCost:null);
- const uR=segM.map((g,i)=>g?g.siRev-rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i].rev:0),0):null),uC=segM.map((g,i)=>g?g.siCost-rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i].cost:0),0):null);
- const hasU=uR.some(v=>v&&Math.abs(v)>=1)||uC.some(v=>v&&Math.abs(v)>=1);
- const ids=R.list.map(c=>c.p.id),unl=G&&nSeg?G.unlinked(cols.filter((ym,i)=>segM[i]),ids):[];
+ const eR=A.eR,eC=A.eC,uR=A.uR,uC=A.uC;
+ const hasU=full&&(uR.some(v=>v&&Math.abs(v)>=1)||uC.some(v=>v&&Math.abs(v)>=1));
+ const ids=R.list.map(c=>c.p.id),unl=G&&nSeg&&full?G.unlinked(cols.filter((ym,i)=>segM[i]),ids):[];
  // 그리기
  const cell=(v,t)=>`<td class="n"${t?` title="${esc(t)}"`:""}>${v==null?"":U(v,1)}</td>`;
  const line=(lead,lab,k,py,a,cls,tips)=>`<tr class="${cls||""}">${lead}<td class="c it">${lab}</td>${cell(k)}${cell(py)}<td class="n yt">${U(sum(a),1)}</td>${a.map((v,i)=>cell(v,tips&&tips[i])).join("")}</tr>`;
@@ -1805,26 +1819,32 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
  const etcTip=f=>segM.map(g=>g?Object.keys(g.cats).sort((a,b)=>oi(a)-oi(b)).map(k=>`${k} ${U(g.cats[k][f])}`).join(" · "):"구분손익 미반영");
  const eRows=[["매출",eR,"r1",etcTip("rev")]];if(UI.pfEtc)cats.forEach(k=>eRows.push(["ㄴ "+k,catRow(k,"rev"),"sb"]));
  eRows.push(["매출원가",eC,"",etcTip("cost")]);if(UI.pfEtc)cats.forEach(k=>eRows.push(["ㄴ "+k,catRow(k,"cost"),"sb"]));eRows.push(["매출이익",minus(eR,eC),""]);
- body+=eRows.map(([lab,a,cls,tp],i)=>line(i?"":`<td class="g" rowspan="${eRows.length}">기타</td><td class="cl" rowspan="${eRows.length}">구분손익<div class="hint">재무 배포</div></td><td class="nm" rowspan="${eRows.length}" data-copy="${esc(eLab)}">${esc(eLab)}${G?`<div><button class="btn s" onclick="UI.pfEtc=!UI.pfEtc;render()">${UI.pfEtc?"계정별 접기":"계정별 보기"}</button></div>`:""}</td>`,lab,null,null,a,cls,tp)).join("");
+ if(full)body+=eRows.map(([lab,a,cls,tp],i)=>line(i?"":`<td class="g" rowspan="${eRows.length}">기타</td><td class="cl" rowspan="${eRows.length}">구분손익<div class="hint">재무 배포</div></td><td class="nm" rowspan="${eRows.length}" data-copy="${esc(eLab)}">${esc(eLab)}${G?`<div><button class="btn s" onclick="UI.pfEtc=!UI.pfEtc;render()">${UI.pfEtc?"계정별 접기":"계정별 보기"}</button></div>`:""}</td>`,lab,null,null,a,cls,tp)).join("");
  if(hasU)body+=[["매출",uR,"r1"],["매출원가",uC,""],["매출이익",minus(uR,uC),""]].map(([lab,a,cls],i)=>line(i?"":`<td class="g" rowspan="3">미연결</td><td class="cl" rowspan="3">구분손익</td><td class="nm" rowspan="3">진행매출 중<br>현장 미연결</td>`,lab,null,null,a,cls)).join("");
  // 합계
- const tot=f=>cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i][f]:0),0)+((f==="rev"?eR:eC)[i]||0)+((f==="rev"?uR:uC)[i]||0));
- const tR=tot("rev"),tC=tot("cost"),tCo=cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.coll[i]||0),0));
+ const tR=A.tR,tC=A.tC,tCo=cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.coll[i]||0),0));
  const T=k=>rowsP.reduce((t,r)=>t+k(r),0);
- body+=line(`<td class="g" rowspan="4">합계</td><td class="cl" rowspan="4">EPC사업부<br>(국내)</td><td class="nm" rowspan="4">전체</td>`,"매출",T(r=>r.c.contract),T(r=>r.y.py.rev),tR,"r1 tt")+line("","매출원가",T(r=>r.c.budget),T(r=>r.y.py.cost),tC,"tt")+line("","매출이익",T(r=>r.c.contract-r.c.budget),T(r=>r.y.py.rev-r.y.py.cost),minus(tR,tC),"tt")+line("","수금액",T(r=>r.c.collCum),T(r=>r.y.collPY),tCo,"tt cl4");
+ body+=line(full?`<td class="g" rowspan="4">합계</td><td class="cl" rowspan="4">EPC사업부<br>(국내)</td><td class="nm" rowspan="4">전체</td>`:`<td class="g" rowspan="4">합계</td><td class="cl" rowspan="4">선택 현장</td><td class="nm" rowspan="4">${R.list.length}곳<div class="hint">기타·미연결 제외</div></td>`,"매출",T(r=>r.c.contract),T(r=>r.y.py.rev),tR,"r1 tt")+line("","매출원가",T(r=>r.c.budget),T(r=>r.y.py.cost),tC,"tt")+line("","매출이익",T(r=>r.c.contract-r.c.budget),T(r=>r.y.py.rev-r.y.py.cost),minus(tR,tC),"tt")+line("","수금액",T(r=>r.c.collCum),T(r=>r.y.collPY),tCo,"tt cl4");
  // 검증 · 연결
- const chk=segM.map((g,i)=>g&&g.chk&&g.chk.rev!=null&&Math.abs(g.chk.rev-tR[i])>=1?`${+cols[i].slice(5)}월 표 합계 ${U(tR[i])} ≠ 파일 EPC사업부(국내) ${U(g.chk.rev)}`:"").filter(Boolean);
+ const chk=segM.map((g,i)=>full&&g&&g.chk&&g.chk.rev!=null&&Math.abs(g.chk.rev-tR[i])>=1?`${+cols[i].slice(5)}월 표 합계 ${U(tR[i])} ≠ 파일 EPC사업부(국내) ${U(g.chk.rev)}`:"").filter(Boolean);
  const segTxt=G?(nSeg?`구분손익 반영 ${cols.filter((ym,i)=>segM[i]).map(ym=>+ym.slice(5)+"월").join("·")} (헤더 파란색) — 그 달은 재무 숫자 그대로 · 나머지 달은 ERP 결산${est?"·추정":""}`:"구분손익 미반영 — [구분손익 업로드]로 재무 배포 엑셀을 올리면 기타(전력·O&M 등)가 채워짐"):"";
  const unlH=unl.length?`<div class="hint warn" style="margin-top:6px">구분손익 진행매출 중 현장과 연결 안 된 프로젝트 코드 ${unl.length}건 — 현장을 고르면 그 현장 행으로 들어감 (한 번만 지정): ${unl.map(u=>`<span class="segu"><b>${esc(u.code)}</b> ${esc(u.name)} · ${U(u.rev)}${UN()} <select onchange="segLink35('${esc(u.code)}',this.value)"><option value="">현장 선택</option>${R.list.map(c=>`<option value="${c.p.id}">${esc(NM(c.p))}</option>`).join("")}</select></span>`).join("")}</div>`:"";
- return`<style>#t8y td{padding:5px 8px}#t8y td.g{text-align:center;font-weight:700;background:var(--th);border-right:1px solid var(--line);min-width:64px}
-#t8y td.cl,#t8y td.nm{text-align:center;white-space:normal;min-width:84px;max-width:150px;word-break:keep-all;border-right:1px solid var(--line2);font-weight:600}
-#t8y td.it{background:var(--th);color:var(--sub);border-right:1px solid var(--line2);min-width:58px}#t8y tr.r1 td{border-top:1px solid var(--line)}
-#t8y td.yt{font-weight:700;border-left:1px solid var(--line2);border-right:1px solid var(--line2)}#t8y tr.sb td{color:var(--muted);font-size:12px}#t8y tr.sb td.it{font-weight:400;text-align:left;padding-left:14px}
-#t8y tr.tt td{font-weight:700;background:var(--th)}#t8y th.sg{color:var(--brand);box-shadow:inset 0 -2px 0 var(--brand)}#t8y .ged{margin-top:4px;font-weight:400}#t8y .ged select{font-size:12px;max-width:130px}
+ return`<style>#t8y td{padding:5px 8px}#t8y td.g{text-align:center;font-weight:700;background:var(--th);border:1px solid var(--grid2);min-width:64px}
+#t8y td.cl,#t8y td.nm{text-align:center;white-space:normal;min-width:84px;max-width:150px;word-break:keep-all;font-weight:600}
+#t8y td.it{background:var(--th);color:var(--sub);min-width:58px}#t8y tr.r1 td{border-top:2px solid var(--grid2)}#t8y td.nm{border-right:1.5px solid var(--grid2)}
+#t8y td.yt{font-weight:700;border-left:1.5px solid var(--grid2);border-right:1.5px solid var(--grid2)}#t8y tr.sb td{color:var(--muted);font-size:12px}#t8y tr.sb td.it{font-weight:400;text-align:left;padding-left:14px}
+#t8y tr.tt td{font-weight:700;background:var(--th)}#t8y tr.tt.r1 td{border-top:3px double var(--grid2)}#t8y tr.cl4 td{border-bottom:1px solid var(--grid)}#t8y th.sg{color:var(--brand);box-shadow:inset 0 -2px 0 var(--brand)}#t8y .ged{margin-top:4px;font-weight:400}#t8y .ged select{font-size:12px;max-width:130px}
 .segu{display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0}.segu select{font-size:12px}</style>
  <div class="card"><div class="card-h"><div><h2>실적관리 — 프로젝트별 월별 (${UN()})</h2><div class="desc">${Y}년 1~12월 · 계약금액 열: 매출=계약금액 · 매출원가=실행예산 · 매출이익=목표이익 · 수금액=누적 수금(VAT 포함) · ${segTxt}</div></div><div class="acts">${G?`<button class="btn s p" onclick="segPick35()" title="재무 배포 '(SE) ${YY}년 구분손익_MM월' 엑셀 — 여러 달 한 번에 선택 가능, 같은 달은 새 파일로 덮어씀">구분손익 업로드</button>`:""}<button class="btn s" onclick="UI.pfGrpEd=!UI.pfGrpEd;render()">${UI.pfGrpEd?"구분 편집 닫기":"구분 편집"}</button><button class="btn s" onclick="copyTable('t8y')" title="엑셀·PPT 표에 붙여넣기">표 복사</button></div></div>
  ${chk.length?`<div class="hint warn">${chk.map(esc).join(" · ")}</div>`:""}${unlH}
  <div class="scroll"><table class="t" id="t8y"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`}
+// v41: 월간 누적 매출이 어떻게 구성됐는지 한 줄로 (실적 분석·실적현황 카드와 바로 맞춰 볼 수 있게)
+function monNote41(R){const A=R.act;if(!A)return"";const sum=a=>a.reduce((t,v)=>t+(v||0),0);const mm=+R.M.slice(5);
+ const p=sum(A.pR),e=sum(A.eR),u=sum(A.uR),t=sum(A.tR),est=A.estM?A.tR[A.iM]||0:0;const segN=A.segM.filter(Boolean).length;
+ const lastFix=A.estM?mm-1:mm;
+ return`<div class="hint mon41">매출 누적 <b>${U(t,1)}</b> = 프로젝트 진행매출 ${U(p,1)}${A.full?` + 기타(전력·O&M 등) ${U(e,1)}${Math.abs(u)>=5e5?` + 현장 미연결 코드 ${U(u,1)}`:""}`:" (선택 현장만 · 기타 제외)"}`+
+  (est?` · 결산 확정 1~${lastFix}월 ${U(t-est,1)} + ${mm}월 추정 ${U(est,1)}`:"")+
+  ` · ${segN?`구분손익 반영 ${segN}개월은 재무 숫자 그대로, `:""}나머지 달은 ERP 결산 — 대시보드 '실적 분석'·'실적현황'과 같은 기준${est?` (그 화면은 결산 확정분 ${U(t-est,1)}까지만 표시)`:""}</div>`}
 function notesHtml(id,title,parts){const n=wk().notes||{};return`<div class="notes" id="${id}">${parts.map(([k,l,a,b])=>`<div><h4>${title} · ${l} <span>${(+a.slice(5,7))}월 ${(+a.slice(8))}일 ~ ${(+b.slice(5,7))}월 ${(+b.slice(8))}일</span><button class="btn s" onclick="copyNotes('${k}')">복사</button></h4><textarea rows="4" placeholder="${MD(a)} 내용을 입력" oninput="wk().notes.${k}=this.value;save()">${esc(n[k]||"")}</textarea></div>`).join("")}</div>`}
 function setPF(pid,k,v,noWeek){const p=proj(pid);p[k]=v;if(!noWeek)p.fieldWeek=WI().mon;save();render()}
 function snapshot(){const w=WI(),R=buildReport(DB.projects,w.cutoff,opt());const rows={};R.list.forEach(c=>rows[c.p.id]={revCum:c.revCum,collCum:c.collCum,ar:c.ar,backlog:c.backlog});
@@ -1917,14 +1937,14 @@ function rExec(){const w=WI(),R=buildReport(rsPS35(),w.cutoff,opt()),k=R.kpi,mm=
  <div class="doc-h"><div><h1>EPC사업부 프로젝트 현황판</h1><div class="meta">기준일: ${KD(w.cutoff)} 기준 · 통화단위: 억원 (VAT 별도, 수금은 VAT 포함) · 주관: EPC사업관리팀</div></div><div class="meta" style="text-align:right">${w.labelFull}차 보고<br>${mm}월 매출 ${est(R)?"ERP 미마감 · 전표 기준 추정 포함":"ERP 마감 확정값"}</div></div>
  <div class="grid g4">
   <div class="kpi"><div class="l">총 수주/계약 총액 (확정+협의)</div><div class="v">${E(k.contract)}<small>억원</small></div><div class="s">확정 ${k.nFix}건 + 협의 ${k.nNeg}건 (전체 ${R.list.length}개 사업)</div></div>
-  <div class="kpi"><div class="l">${mm}월 누계 매출 실적</div><div class="v">${E(k.revCum)}<small>억원</small></div><div class="s">${mm}월 당월 ${E(k.revCur)}억원</div></div>
+  <div class="kpi"><div class="l">${R.M.slice(0,4)}년 누계 매출 (1월~${MD(w.cutoff)})</div><div class="v">${E(R.tot.rev)}<small>억원</small></div><div class="s">${R.act&&R.act.full?`프로젝트 ${E(R.act.pR.reduce((t,v)=>t+(v||0),0))} · 기타 ${E(R.act.eR.reduce((t,v)=>t+(v||0),0)+R.act.uR.reduce((t,v)=>t+(v||0),0))} · `:""}${mm}월 ${E(R.mon.rev[R.cols.indexOf(R.M)]||0)}억원</div></div>
   <div class="kpi"><div class="l">총 수주잔액 (미실행 잔여액)</div><div class="v">${E(k.backlog)}<small>억원</small></div><div class="s">향후 공사 진행 매출 실현 잔여액</div></div>
-  <div class="kpi"><div class="l">전체 평균 실행률 (누계)</div><div class="v">${P(k.avg,1)}<small>%</small></div><div class="s">${mm}월 실수금 ${E(k.collMonth)}억원 · 미수 ${E(k.ar)}억원</div></div>
+  <div class="kpi"><div class="l" title="계약 이후 누적매출 ÷ 계약금액 (실행률 = 실행예산 ÷ 계약금액과는 다른 값)">평균 실적 공정률 (누적)</div><div class="v">${P(k.avg,1)}<small>%</small></div><div class="s">${mm}월 실수금 ${E(k.collMonth)}억원 · 미수 ${E(k.ar)}억원</div></div>
  </div>
  <section class="dsec dsec1"><h3>1. 현장별 진행 현황 <span class="muted" style="font-weight:400;font-size:12px">막대 = 매출 기준 실적, 세로선 = 계획공정률 · 순서는 프로젝트 탭 순서</span></h3>${cards}</section>
  </div>
- <section class="dsec dsec-new"><h3>2. 수주 및 ${mm}월 누계 매출 현황 (확정 수주 vs 계약 협의 중)</h3>
- <table class="t"><thead><tr><th>수주구분</th><th>발주처/고객사</th><th>프로젝트명</th><th>총 수주/계약금액</th><th>${mm}월 누계 매출</th><th>수주잔액(미실행분)</th><th style="width:170px">진행률/실행률</th><th>비고</th></tr></thead><tbody>
+ <section class="dsec dsec-new"><h3>2. 수주 및 누적 매출 현황 (확정 수주 vs 계약 협의 중) <span class="muted" style="font-weight:400;font-size:12px">누적 매출 = 계약 이후 전체 기간 · 올해 실적은 상단 카드</span></h3>
+ <table class="t"><thead><tr><th>수주구분</th><th>발주처/고객사</th><th>프로젝트명</th><th>총 수주/계약금액</th><th>누적 매출<br>(계약 이후)</th><th>수주잔액(미실행분)</th><th style="width:170px">진행률/실행률</th><th>비고</th></tr></thead><tbody>
  ${rowsSec1(fix,"확정 수주")}${fix.length?subRow(fix,"확정 수주"):""}${rowsSec1(neg,"계약 협의 중")}${neg.length?subRow(neg,"계약 협의 중"):""}
  <tr class="sum"><td colspan="3">[합계] EPC사업부 전체 (${R.list.length}건)</td><td class="n">${E(k.contract)}</td><td class="n">${E(k.revCum)}</td><td class="n">${E(k.backlog)}</td><td><div class="pbar"><div class="bar"><i style="width:${Math.min(k.avg,100)}%"></i></div><span>${P(k.avg,1)}%</span></div></td><td></td></tr></tbody></table>
  </section>
@@ -3870,7 +3890,7 @@ function ragOf(p){const k=kpiOf(p);const w=curMissing(p).length+preWarn(p).lengt
 const RAG_ST={R:"st-late",A:"st-wait",G:"st-ok"};
 function gpOf(p){if(p.targetGp!==""&&p.targetGp!=null)return p.targetGp;const b=budgetTotal(p);return p.amount&&b?Math.round((p.amount-b)/p.amount*10000)/100:""}
 function warnList(p){return[...curMissing(p).map(d=>"필수 서류 미완료: "+d.name),...preWarn(p),...costWarn(p),...delays(p).map(x=>"지연: "+x.text)]}
-function rpSnap(plist,w){const pcts=plist.map(p=>kpiOf(p).pct).filter(v=>v!=null);return{sites:plist.length,amount:eok(plist.reduce((s,p)=>s+Number(p.amount||0),0)),pct:pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length*10)/10:"",sales:eok(plist.reduce((s,p)=>s+sumEv(salesEv(p),x=>x.d<=w.e),0)),focus:plist.filter(p=>ragOf(p)!=="G").length}}
+function rpSnap(plist,w){const pcts=plist.map(p=>kpiOf(p).pct).filter(v=>v!=null);return{sites:plist.length,amount:eok(plist.reduce((s,p)=>s+Number(p.amount||0),0)),pct:pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length*10)/10:"",sales:eok(rpSales41(plist,w)),focus:plist.filter(p=>ragOf(p)!=="G").length}}
 function rpIssues(plist){return plist.map(p=>({p,w:warnList(p)})).filter(x=>x.w.length||x.p.statusLine).sort((a,b)=>b.w.length-a.w.length).slice(0,2)}
 function rpAct(w,plist){const ids=plist.map(p=>p.id);const inP=id=>!id||ids.includes(id);const tag=id=>{const p=proj(id);return p?`<b>${esc(pname(p))}</b> `:""};const taskP=g=>{const k=tasks.find(t=>t.id===g.refId);return k?k.projectId:""};
  const prev=logs.filter(g=>g.date>=w.s&&g.date<=w.e&&g.refType!=="plant"&&inP(g.refType==="project"?g.refId:taskP(g))).map(g=>({d:g.date,h:tag(g.refType==="project"?g.refId:taskP(g))+esc(g.text)}));
@@ -3894,7 +3914,7 @@ function renderReport(){const act=activeProjects();$("rpProj").innerHTML='<optio
  let h=`<div class="rp-head"><div><b>${esc(settings.title||"EPC 사업관리")} · 사업관리팀 주간보고</b><div class="hint" style="margin-top:2px">${w.label} · 전주 ${dm(w.s)}~${dm(w.fri)} · 금주 ${dm(w.ns)}~${dm(w.nfri)}${settings.author?" · 작성 "+esc(settings.author):""} · ${rpScope==="all"?"전체":rpScope==="epc"?"EPC":rpScope==="om"?"O&M":esc((plist[0]||{}).name||"")}</div></div><div class="no-print" style="display:flex;gap:4px;align-items:center"><button class="btn btn-secondary btn-sm" onclick="rpWeekOff--;renderReport()">◀ 이전 주</button>${rpWeekOff?`<button class="btn btn-secondary btn-sm" onclick="rpWeekOff=0;renderReport()">이번 보고 주</button>`:""}<button class="btn btn-secondary btn-sm" onclick="rpWeekOff++;renderReport()">다음 주 ▶</button></div></div>`;
  let sec=1;
  if(showEpc){
-  h+=`<h3>${sec++}. 핵심 현황 스냅샷</h3><div class="rp-kpi"><div class="kpi blue"><div class="k">진행 현장</div><div class="v">${snap.sites}</div><div class="s">${cmpTxt(snap.sites,ps.sites,"개소")}</div></div><div class="kpi"><div class="k">계약 금액 합계</div><div class="v" style="font-size:24px">${snap.amount}<small style="font-size:12px"> 억원</small></div><div class="s">${cmpTxt(snap.amount,ps.amount,"억")}</div></div><div class="kpi green"><div class="k">평균 실적 공정률</div><div class="v" style="font-size:24px">${snap.pct===""?"-":snap.pct+"%"}</div><div class="s">${cmpTxt(snap.pct,ps.pct,"%")} · 기성 확정 기준</div></div><div class="kpi blue"><div class="k">누적 매출</div><div class="v" style="font-size:24px">${snap.sales}<small style="font-size:12px"> 억원</small></div><div class="s">${cmpTxt(snap.sales,ps.sales,"억")}</div></div><div class="kpi ${snap.focus?"red":""}"><div class="k">중점 관리 현장</div><div class="v">${snap.focus}</div><div class="s">${cmpTxt(snap.focus,ps.focus,"개소")} · RAG A·R</div></div></div>`;
+  h+=`<h3>${sec++}. 핵심 현황 스냅샷</h3><div class="rp-kpi"><div class="kpi blue"><div class="k">진행 현장</div><div class="v">${snap.sites}</div><div class="s">${cmpTxt(snap.sites,ps.sites,"개소")}</div></div><div class="kpi"><div class="k">계약 금액 합계</div><div class="v" style="font-size:24px">${snap.amount}<small style="font-size:12px"> 억원</small></div><div class="s">${cmpTxt(snap.amount,ps.amount,"억")}</div></div><div class="kpi green"><div class="k">평균 실적 공정률</div><div class="v" style="font-size:24px">${snap.pct===""?"-":snap.pct+"%"}</div><div class="s">${cmpTxt(snap.pct,ps.pct,"%")} · 기성 확정 기준</div></div><div class="kpi blue"><div class="k" title="실적 분석과 같은 기준 (결산 확정월까지 · 구분손익 올린 달은 재무 숫자)">${w.y}년 누계 매출</div><div class="v" style="font-size:24px">${snap.sales}<small style="font-size:12px"> 억원</small></div><div class="s">${cmpTxt(snap.sales,ps.sales,"억")}</div></div><div class="kpi ${snap.focus?"red":""}"><div class="k">중점 관리 현장</div><div class="v">${snap.focus}</div><div class="s">${cmpTxt(snap.focus,ps.focus,"개소")} · RAG A·R</div></div></div>`;
   const iss=rpIssues(plist);
   h+=`<h3>${sec++}. 금주 핵심 보고안건 <span class="hint" style="font-weight:400">경고가 많은 현장 ${iss.length}건</span></h3>`+(iss.length?`<div class="rp-cards" style="grid-template-columns:repeat(2,1fr)">${iss.map(({p,w:wl})=>{const k=kpiOf(p),n=nextMs(p),c=pcolor(p),g=ragOf(p);const dec=tasks.some(t=>t.projectId===p.id&&t.status==="대기")||requests.some(q=>q.projectId===p.id&&(q.status==="접수"||q.status==="보류"));
    return`<div class="rp-card" style="--pc:${c.t};cursor:pointer" onclick="openDetail('${p.id}')"><div class="hd"><div><div class="nm">${esc(pname(p))}</div><div class="hint">${esc(p.client||"")}${p.capacity?" · "+(Math.round(p.capacity/10)/100)+"MW":""} · ${stageName(p.stage)}</div></div><div><span class="st ${RAG_ST[g]}">RAG ${g}</span></div></div>
@@ -3908,13 +3928,8 @@ function renderReport(){const act=activeProjects();$("rpProj").innerHTML='<optio
   h+=`<h3>${sec++}. 프로젝트 진행현황 <span class="hint" style="font-weight:400">계약 완료 ~ COD 이전 · ${ctrl.length}개소</span></h3>`+(ctrl.length?`<table><tr><th>#</th><th>발주처</th><th>현장명</th><th>PV용량(MW)</th><th>설치방식</th><th>모듈</th><th>인버터</th><th>계획(%)</th><th>실적(%)</th><th>목표 GP(%)</th><th>목표준공</th><th>RAG</th><th>주요 현안/Risk</th></tr>${ctrl.map((p,i)=>{const k=kpiOf(p),g=ragOf(p);return`<tr class="clickable" onclick="openDetail('${p.id}')"><td>${i+1}</td><td>${esc(p.client||"")}</td><td>${esc(pname(p))}</td><td>${p.capacity?Math.round(p.capacity/10)/100:""}</td><td>${esc(p.installType||"")}</td><td>${esc(p.moduleMaker||"")}</td><td>${esc(p.inverterMaker||"")}</td><td>${k.plan!=null?k.plan:""}</td><td>${k.pct!=null?k.pct:""}</td><td>${gpOf(p)}</td><td>${p.deadline?p.deadline.slice(2).replace(/-/g,"."):""}</td><td><span class="st ${RAG_ST[g]}">${g}</span></td><td>${esc(p.statusLine||"")}</td></tr>`+rpSiteRows(p)}).join("")}</table><div class="hint" style="margin-top:4px">설치방식·제조사·목표 GP는 현장 편집에서 입력 · 목표 GP를 비우면 (계약금액 − 실행예산) ÷ 계약금액</div>`:'<div class="hint">해당 현장 없음</div>');
   const A=rpAct(w,plist);
   h+=`<h3>${sec++}. 활동 보고 및 지원요청 사항</h3><div class="rp-list" style="grid-template-columns:repeat(3,1fr)"><div><div class="hint" style="margin-bottom:4px;font-weight:600">전주 (${dm(w.s)}~${dm(w.fri)}) · ${A.prev.length}</div>${lnList(A.prev,"전주 진행사항 없음")}</div><div><div class="hint" style="margin-bottom:4px;font-weight:600">금주 (${dm(w.ns)}~${dm(w.nfri)}) · ${A.cur.length}</div>${lnList(A.cur,"금주 예정 없음")}</div><div><div class="hint" style="margin-bottom:4px;font-weight:600">주요 관리 현장${A.fids.length?": "+A.fids.map(id=>esc(pname(proj(id)))).join(" / "):""}</div>${lnList(A.focus,"없음")}</div></div><div class="hint" style="margin-top:4px">전주 = 현장·Task 진행사항과 완료 Task · 금주 = 이번 주 마감 Task·일정·마일스톤·기성 기한</div>`;
-  let T={amt:0,pre:0,wk:0,cum:0,rem:0,cwk:0,ccum:0,mis:0};
-  const rows=plist.map((p,i)=>{const se=salesEv(p),ce=collectEv(p);const pre=sumEv(se,x=>x.d<w.s),wk=sumEv(se,x=>x.d>=w.s&&x.d<=w.e),cum=pre+wk,rem=Number(p.amount||0)-cum;const cw=ce.filter(x=>x.d>=w.s&&x.d<=w.e),cwk=cw.reduce((s,x)=>s+x.a,0),ccum=sumEv(ce,x=>x.d<=w.e),mis=Math.max(0,cum-ccum);T.amt+=Number(p.amount||0);T.pre+=pre;T.wk+=wk;T.cum+=cum;T.rem+=rem;T.cwk+=cwk;T.ccum+=ccum;T.mis+=mis;const note=cw.some(x=>x.adv)?"선급금 수령":p.stage==="contract"?"계약 진행중":"";const z=v=>v?eok(v):"";
-   return`<tr class="clickable" onclick="openDetail('${p.id}','bill')"><td>${i+1}</td><td>${esc(p.client||"")}</td><td>${esc(pname(p))}</td><td>${eok(p.amount)}</td><td>${z(pre)}</td><td>${se.filter(x=>x.d>=w.s&&x.d<=w.e).map(x=>dm(x.d)).join(", ")}</td><td>${z(wk)}</td><td>${z(cum)}</td><td>${eok(rem)}</td><td>${cw.map(x=>dm(x.d)).join(", ")}</td><td>${z(cwk)}</td><td>${z(ccum)}</td><td class="${mis?"soon":""}">${z(mis)}</td><td class="hint">${note}</td></tr>`}).join("");const z=v=>v?eok(v):"";
-  h+=`<h3>${sec++}. 실적 관리 <span class="hint" style="font-weight:400">단위 억원 · 보고 주 기준</span></h3><table><tr><th rowspan="2">#</th><th rowspan="2">발주처</th><th rowspan="2">현장명</th><th rowspan="2">계약금액</th><th rowspan="2">기 매출총액</th><th colspan="4">매출</th><th colspan="4">수금</th><th rowspan="2">기타</th></tr><tr><th>계산서발행일</th><th>매출액</th><th>누적 매출액</th><th>수주 잔액</th><th>수금일</th><th>수금액</th><th>누적 수금액</th><th>미수금</th></tr>${rows}<tr><td colspan="3"><b>합계</b></td><td><b>${eok(T.amt)}</b></td><td><b>${z(T.pre)}</b></td><td></td><td><b>${z(T.wk)}</b></td><td><b>${z(T.cum)}</b></td><td><b>${eok(T.rem)}</b></td><td></td><td><b>${z(T.cwk)}</b></td><td><b>${z(T.ccum)}</b></td><td><b>${z(T.mis)}</b></td><td></td></tr></table><div class="hint" style="margin-top:4px">매출 = 기성 청구일(세금계산서) 기준 확정액 + 선급금 외 수금 항목 청구 · 수금 = 기성 입금(선급금 공제 후) + 수금 항목 입금 · 행 클릭 → 현장 기성</div>`;
-  const curM=Number(todayStr().slice(5,7)),Y=w.y;const mon=Array.from({length:12},(_,i)=>{const ym=`${Y}-${String(i+1).padStart(2,"0")}`;const end=ymEnd(ym);const inM=d=>d&&d.startsWith(ym);const ord=plist.filter(p=>inM(p.contractDate)).reduce((s,p)=>s+Number(p.amount||0),0);let sal=0,gp=0,col=0,cs=0,cc=0;plist.forEach(p=>{const se=salesEv(p),ce=collectEv(p);const ms=sumEv(se,x=>inM(x.d));sal+=ms;const g=gpOf(p);gp+=ms*(g===""?0:Number(g))/100;col+=sumEv(ce,x=>inM(x.d));cs+=sumEv(se,x=>x.d<=end);cc+=sumEv(ce,x=>x.d<=end)});return{ord,sal,gp,col,mis:Math.max(0,cs-cc),bl:plist.filter(p=>p.contractDate&&p.contractDate<=end).reduce((s,p)=>s+Number(p.amount||0),0)-cs,future:i+1>curM}});
-  const past=mon.filter(m=>!m.future);const lastM=past[past.length-1]||{};const mrow=(lab,f,tot)=>`<tr><td><b>${lab}</b></td>${mon.map(m=>`<td class="${m.future?"hint":""}">${m.future?"":(m[f]?eok(m[f]):"")}</td>`).join("")}<td><b>${tot}</b></td></tr>`;const ts=f=>z(past.reduce((s,m)=>s+m[f],0));
-  h+=`<h3>${sec++}. 월간 누적 실적 <span class="hint" style="font-weight:400">${Y}년 · 단위 억원</span></h3><table><tr><th>구분</th>${mon.map((m,i)=>`<th>${i+1}월${m.future?'<span class="hint"> (예상)</span>':""}</th>`).join("")}<th>누적</th></tr>${mrow("수주","ord",ts("ord"))}${mrow("매출","sal",ts("sal"))}${mrow("매출이익","gp",ts("gp"))}${mrow("수금","col",ts("col"))}${mrow("미수금","mis",z(lastM.mis))}${mrow("수주 잔","bl",z(lastM.bl))}</table><div class="hint" style="margin-top:4px">매출이익 = 매출 × 목표 GP · 이번 달 이후는 예상 칸 (실적 발생 시 자동 반영)</div>`}
+  // v41: 매출·수금·월간 누적은 실적·현황(실적관리) 한 곳에서 — 여기서 기성 청구 기준으로 따로 계산하던 표 2개는 숫자가 달라 혼선이라 바로가기로 대체
+  h+=`<h3>${sec++}. 실적 관리 · 월간 누적 실적</h3><div class="rp-card" style="padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span>${(()=>{try{const a=act41Ytd(w.y);return`${w.y}년 누계 매출 <b>${eok(a.rev)||0}억원</b> (1~${a.m}월 결산 · 프로젝트 ${eok(a.p)||0} + 기타 ${eok(a.e)||0})`}catch(e){return""}})()}</span><span class="hint">현장별 매출·수금·미수와 월간 누적 표는 실적·현황 탭 (ERP 결산 + 재무 구분손익 기준 · 실적 분석과 같은 숫자)</span><button class="btn btn-sm no-print" onclick="wkSegGo('erp')">실적·현황 보기 →</button></div>`}
  const RM=ramData("RM",w),AM=ramData("AM",w);
  const ramBox=(lab,d)=>`<div><div class="hint" style="margin-bottom:4px;font-weight:600">${lab} · 진행 ${d.open}건</div><div class="rp-card" style="padding:8px 10px;margin-bottom:8px"><div class="line" style="margin:0">${d.summary?esc(d.summary):'<span class="hint" style="font-weight:400">성과 요약 없음 (해당 Task의 진행사항이 자동 표시)</span>'}</div></div><div class="hint" style="font-weight:600">전주 활동</div>${lnList(d.prev,"전주 기록 없음")}<div class="hint" style="font-weight:600;margin-top:6px">금주 예정</div>${lnList(d.cur,"금주 예정 없음")}</div>`;
  h+=`<h3>${sec++}. RM / AM <span class="hint" style="font-weight:400">Task 업무 구분이 RM·AM인 업무와 진행사항에서 자동</span></h3><div class="rp-list">${ramBox("Risk Management",RM)}${ramBox("Asset Management",AM)}</div>${!RM.ts.length&&!AM.ts.length?'<div class="hint" style="margin-top:4px">Task를 만들 때 "업무 구분"을 RM 또는 AM으로 고르면 여기에 자동으로 모임</div>':""}`;
@@ -3923,7 +3938,7 @@ function renderReport(){const act=activeProjects();$("rpProj").innerHTML='<optio
  $("reportPage").innerHTML=h;rpWrap()}
 function rpWrap(){const root=$("reportPage");if(rpOpen===null)rpOpen={};[...root.querySelectorAll("h3")].forEach(h3=>{const sec=document.createElement("div");sec.className="rp-sec";let n=h3.nextSibling;while(n&&n.nodeName!=="H3"){const nx=n.nextSibling;sec.appendChild(n);n=nx}h3.after(sec);const key=h3.textContent.replace(/^\d+\.\s*/,"").split(" ")[0];const open=rpOpen[key]!==undefined?rpOpen[key]:true;h3.classList.toggle("closed",!open);h3.onclick=()=>{h3.classList.toggle("closed");rpOpen[key]=!h3.classList.contains("closed")}})}
 function copyReportText(){const w=wrWeek();const act=activeProjects();const plist=rpScope.startsWith("p:")?act.filter(p=>p.id===rpScope.slice(2)):act;const s=rpSnap(plist,w);const ps=(weekly.find(x=>x.wk===addDays(w.s,-7))||{}).snap||{};
- let o=`${settings.title||"EPC 사업관리"} · 사업관리팀 주간보고 (${w.label})\n전주 ${dm(w.s)}~${dm(w.fri)} / 금주 ${dm(w.ns)}~${dm(w.nfri)}\n${"=".repeat(44)}\n\n■ 핵심 현황\n- 진행 현장 ${s.sites}개소 (전주 ${ps.sites??"-"}) · 계약 금액 ${s.amount}억원 · 평균 실적 공정률 ${s.pct||"-"}% · 누적 매출 ${s.sales}억원 · 중점 관리 ${s.focus}개소\n\n■ 금주 핵심 보고안건\n`;
+ let o=`${settings.title||"EPC 사업관리"} · 사업관리팀 주간보고 (${w.label})\n전주 ${dm(w.s)}~${dm(w.fri)} / 금주 ${dm(w.ns)}~${dm(w.nfri)}\n${"=".repeat(44)}\n\n■ 핵심 현황\n- 진행 현장 ${s.sites}개소 (전주 ${ps.sites??"-"}) · 계약 금액 ${s.amount}억원 · 평균 실적 공정률 ${s.pct||"-"}% · ${w.y}년 누계 매출 ${s.sales}억원 · 중점 관리 ${s.focus}개소\n\n■ 금주 핵심 보고안건\n`;
  rpIssues(plist).forEach(({p,w:wl})=>{const k=kpiOf(p),n=nextMs(p);o+=`[${pname(p)}] 계획 ${k.plan!=null?k.plan+"%":"-"} → 실적 ${k.pct!=null?k.pct+"%":"-"} · RAG ${ragOf(p)}\n`;if(p.statusLine)o+=`  · ${p.statusLine}\n`;wl.slice(0,4).forEach(x=>o+=`  · ${x}\n`);o+=`  Owner ${p.owner||"-"} · Due ${n&&n.planDate?dm(n.planDate):"-"} · 다음 Action: ${n?n.name:"-"}\n`});
  o+="\n■ 프로젝트 진행현황\n";plist.filter(p=>!p.codDate).forEach((p,i)=>{const k=kpiOf(p);o+=`${i+1}. ${pname(p)} (${p.client||""}) · ${stageName(p.stage)} · 계획 ${k.plan??"-"}% / 실적 ${k.pct??"-"}% · RAG ${ragOf(p)}${p.statusLine?" · "+p.statusLine:""}\n`});
  const A=rpAct(w,plist);const strip=hh=>hh.replace(/<[^>]+>/g,"");o+="\n■ 활동 보고\n[전주]\n";A.prev.forEach(x=>o+=`- ${dm(x.d)} ${strip(x.h)}\n`);o+="[금주]\n";A.cur.forEach(x=>o+=`- ${dm(x.d)} ${strip(x.h)}\n`);
@@ -4279,14 +4294,16 @@ function erpEnsureFrame(){if(erpFrameReady)return erpFrameReady;const f=$("erpFr
 function erpRefreshFrame(){const f=$("erpFrame");if(f&&f.contentWindow&&f.contentWindow.ERPAPP&&curTab==="erp")try{f.contentWindow.ERPAPP.render()}catch(e){}}
 const _switchTab=switchTab;let erpSub="weekly";
 switchTab=function(n){if(String(n).startsWith("erp")){erpSub=n.split(":")[1]||erpSub;_switchTab("erp:"+erpSub);$("tab-erp").style.display="block";document.querySelectorAll(".sb-item[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab==="erp:"+erpSub));curTab="erp";
-  if(ERPDB)ERPDB.settings.theme=settings.theme==="dark"?"dark":"light";erpEnsureFrame().then(a=>{if(a){a.go(erpSub)}else $("tab-erp").insertAdjacentHTML("afterbegin",'<div class="panel delay">실적관리 화면을 불러오지 못함 (브라우저 콘솔 확인)</div>')});return}
+  erpThemeSync42();erpEnsureFrame().then(a=>{if(a){a.go(erpSub)}else $("tab-erp").insertAdjacentHTML("afterbegin",'<div class="panel delay">실적관리 화면을 불러오지 못함 (브라우저 콘솔 확인)</div>')});return}
  $("tab-erp").style.display="none";_switchTab(n)};
 // 왼쪽 메뉴 상위 그룹 접기/펼치기 (상태 저장 · 접힌 그룹의 메뉴로 이동하면 자동으로 펼침)
 function toggleGrp(b){const g=b.parentElement;g.classList.toggle("closed");settings.sbGroups=settings.sbGroups||{};settings.sbGroups[g.dataset.g]=g.classList.contains("closed");_saveDash()}
 function applyGrps(){const m=settings.sbGroups||{};document.querySelectorAll(".sb-group[data-g]").forEach(g=>g.classList.toggle("closed",!!m[g.dataset.g]))}
 const _switchTabG=switchTab;switchTab=function(n){_switchTabG(n);const a=document.querySelector(".sb-item.active[data-tab]");const g=a&&a.closest(".sb-group");if(g)g.classList.remove("closed")};
 Object.assign(TAB_TITLE,Object.fromEntries(ERP_TABS.map(([k,l])=>["erp:"+k,[l,"사업관리 › 실적관리 (ERP 데이터 기반)"]])),{"sales":["영업","준비중"],"support":["사업지원","준비중"]});
-const _toggleThemeDash=toggleTheme;toggleTheme=function(){_toggleThemeDash();if(ERPDB){ERPDB.settings.theme=settings.theme==="dark"?"dark":"light";erpPersist();erpRefreshFrame()}};
+const _toggleThemeDash=toggleTheme;toggleTheme=function(){_toggleThemeDash();erpThemeSync42()};
+// v42: 실적관리 프레임 테마 = 내 대시보드 테마 (공유 저장 안 함)
+function erpThemeSync42(){try{const w=$("erpFrame")&&$("erpFrame").contentWindow;if(w&&typeof w.applyTheme==="function")w.applyTheme()}catch(e){}}
 // ---------- 백업 HTML: 실적관리 데이터 포함 ----------
 exportBackup=function(){const data={exportedAt:new Date().toISOString(),note:"EPC 사업관리 대시보드 백업본 (실적관리 포함)",projects,ms:milestones,pay:payments,req:requests,memo:memos,events,tpl,settings,tasks,recur:recurring,plants,insp:inspections,as:asLogs,vendors,logs,docs,bills,claims,weekly,sites,forms:typeof forms!=="undefined"?forms:[],...(typeof dashExtra==="function"?dashExtra():{}),erp:ERPDB};
  let html="<!DOCTYPE html>\n"+document.documentElement.outerHTML;html=html.replace(/<iframe id="erpFrame"[^>]*>[\s\S]*?<\/iframe>/,'<iframe id="erpFrame" title="EPC 실적관리" class="erp-frame"></iframe>');
@@ -4472,7 +4489,7 @@ function homeChecks(){const out=[];const add=(p,tag,cls,t,tab,ord)=>out.push({p,
   tasks.filter(k=>k.projectId===p.id&&taskLate(k)).forEach(k=>add(p,"Task","r",`${k.title} (마감 ${k.due.slice(5)})`,"task",2))});
  tasks.filter(k=>!k.projectId&&taskLate(k)).forEach(k=>out.push({p:null,tag:"Task",cls:"r",t:`${k.title} (마감 ${k.due.slice(5)})`,tab:"",ord:2,k}));
  return out.sort((a,b)=>a.ord-b.ord)}
-function homeLead(){const act=activeProjects();const E=ERPDB?ERPDB.projects.filter(e=>!e.dashSkip):[];
+function homeLead(){const act=activeProjects();const E=ERPDB?ERPDB.projects.filter(e=>e.show!==false):[];
  const ctr=act.reduce((s,p)=>s+Number(p.amount||0),0);let rev=0,billd=0,coll=0,bud=0,ctrE=0;
  E.forEach(e=>{const cl=(e.closings||[]).slice().sort((a,b)=>String(a.ym).localeCompare(String(b.ym))).pop();if(cl&&cl.cum)rev+=Number(cl.cum.rev||0);(e.bills||[]).forEach(b=>{billd+=Number(b.amt||0);coll+=billCol37(e,b)});if(Number(e.budget)&&Number(e.contract)){bud+=Number(e.budget);ctrE+=Number(e.contract)}});
  const mg=ctrE?(1-bud/ctrE)*100:null;const chk=homeChecks();
@@ -5278,7 +5295,8 @@ function erpSegPaint(sub){let s=$("erpSeg");const te=$("tab-erp");if(!s&&te){s=d
 
 // ===================== 5) 실적 요약 · 실적 분석 =====================
 let pfY=null,pfSub="month";
-function pfPS(){return ERPDB?ERPDB.projects.filter(e=>e.show!==false&&!e.dashSkip):[]}
+// v41: 실적 범위 = 주간보고 '숨김'이 아닌 ERP 현장 (대시보드 카드에서 뺀 현장도 매출 실적은 회사 실적이라 포함)
+function pfPS(){return ERPDB?ERPDB.projects.filter(e=>e.show!==false):[]}
 function pfYears(){const s=new Set();pfPS().forEach(e=>(e.closings||[]).forEach(c=>s.add(String(c.ym).slice(0,4))));s.add(todayStr().slice(0,4));return[...s].sort()}
 function pfLastYm(){let m="";pfPS().forEach(e=>(e.closings||[]).forEach(c=>{if(c.ym>m)m=c.ym}));try{Object.keys(((ERPDB||{}).settings||{}).segPL||{}).forEach(k=>{if(k>m)m=k})}catch(e){}return m}
 function pfCum(e,ym){const l=(e.closings||[]).filter(c=>c.ym<=ym).sort((a,b)=>a.ym.localeCompare(b.ym));const c=l[l.length-1];return c?{rev:+(c.cum&&c.cum.rev)||0,cost:+(c.cum&&c.cum.cost)||0,rate:+(c.cum&&c.cum.rate)||0}:{rev:0,cost:0,rate:0}}
@@ -5784,14 +5802,15 @@ function xl20Det(wb,Y,ps,G,mode){const W=mode==="w";const cols=W?wk20(Y):months2
  // 전체 요약
  let r=5;const tot={rev:Array(nC).fill(0),cost:Array(nC).fill(0),fr:Array(nC).fill(false)};
  ps.forEach(e=>yms.forEach(ym=>{const v=mv20(e,ym,Fs.get(e.id));const k=at(ym);if(k<0)return;tot.rev[k]+=v.rev;tot.cost[k]+=v.cost;if(!v.act)tot.fr[k]=true}));
+ const ET=act41Etc(Y,ps),etR=Array(nC).fill(0);yms.forEach((ym,i)=>{const k=at(ym);if(k<0)return;tot.rev[k]+=ET.rev[i];tot.cost[k]+=ET.cost[i];etR[k]+=ET.rev[i]});
  if(W)ps.forEach(e=>(e.vouchers||[]).forEach(v=>{if(v.unappr||!String(v.date).startsWith(Y)||String(v.ym||v.date).slice(0,7)>G)return;}));
  const rowV=(lab,arr,fr,o={})=>{X.put(r,1,o.st||"",{fill:o.fill});X.put(r,2,lab,{bold:o.bold,fill:o.fill});X.put(r,3,o.c3||"",{fill:o.fill});X.put(r,4,o.c4||"",{fill:o.fill});X.put(r,5,o.amt==null?"":o.amt,{fill:o.fill,num:1});X.put(r,6,o.prev==null?"":o.prev,{fill:o.fill,num:1});
   arr.forEach((v,i)=>X.put(r,C0+i,o.pct?(v==null?"":v):(v||""),{num:1,pct:o.pct,fill:o.fill,color:fr&&fr[i]?X20.blue:undefined,italic:fr&&fr[i]}));
   const t=o.pct?null:(o.prev||0)+arr.reduce((a,b)=>a+(b||0),0);X.put(r,CT,o.pct?"":t,{num:1,bold:true,fill:o.fill});X.put(r,CR,o.rate==null?"":o.rate,{pct:1,fill:o.fill,align:"right"});X.put(r,CN,o.note||"",{fill:o.fill,color:X20.grey,wrap:false});r++};
  ws.mergeCells(r,1,r,CN);X.put(r,1,"■ 전체 (실적 + 예상)",{bold:true,fill:X20.head});r++;
- rowV("매출",tot.rev,tot.fr,{bold:1});rowV("매입",tot.cost,tot.fr);rowV("매출이익",tot.rev.map((v,i)=>v-tot.cost[i]),tot.fr);r++;
+ rowV("매출",tot.rev,tot.fr,{bold:1});rowV("매입",tot.cost,tot.fr);rowV("매출이익",tot.rev.map((v,i)=>v-tot.cost[i]),tot.fr);if(ET.any)rowV("└ 그중 기타 (구분손익: "+ET.lab+")",etR,null,{note:"재무 구분손익 중 프로젝트 진행매출 외 계정"+(ET.unl?" + 현장 미연결 코드":"")});r++;
  ws.mergeCells(r,1,r,CN);X.put(r,1,`■ 공사진행 · ${ps.length}개 현장`,{bold:true,fill:X20.head});r++;
- ps.forEach(e=>{const p=dashP20(e),F=Fs.get(e.id);const ct=n20(e.contract),bg=n20(e.budget);const cG=pfCum(e,G<Y+"-01"?G:(G>Y+"-12"?Y+"-12":G));const inY=yms.filter(ym=>ym<=G).reduce((a,ym)=>{const m=pfMon(e,ym);a.rev+=m.rev;a.cost+=m.cost;return a},{rev:0,cost:0});
+ ps.forEach(e=>{const p=dashP20(e),F=Fs.get(e.id);const ct=n20(e.contract),bg=n20(e.budget);const cG=pfCum(e,G<Y+"-01"?G:(G>Y+"-12"?Y+"-12":G));const inY=yms.filter(ym=>ym<=G).reduce((a,ym)=>{const m=pfMonErp(e,ym);a.rev+=m.rev;a.cost+=m.cost;return a},{rev:0,cost:0});
   // 올해 이전 누적 = 마지막 결산 누적 − 올해 월별 실적 (월별 결산이 일부 달만 올라와도 맞게)
   const c0=G<Y+"-01"?{rev:cG.rev,cost:cG.cost}:{rev:Math.max(0,cG.rev-inY.rev),cost:Math.max(0,cG.cost-inY.cost)};
   const st=p&&typeof isClosed==="function"&&isClosed(p)?"종료":(pfCum(e,G).rate>=99.9?"준공":"진행");
@@ -5880,9 +5899,9 @@ function xl20Year(wb,Y,G){const ws=wb.addWorksheet("연간 계획",{views:[{show
  for(let i=0;i<5;i++)["매출","매출이익","영업이익"].forEach((l,j)=>X.put(r,3+i*3+j,l,{bold:true,fill:X20.sub,align:"center"}));r++;
  const ps=pfPS();const Fs=new Map(ps.map(e=>[e.id,fc20(e)]));const yms=months20(Y);const qv=(es)=>{const q=[0,1,2,3].map(()=>({rv:0,cs:0}));es.forEach(e=>yms.forEach((ym,i)=>{const v=mv20(e,ym,Fs.get(e.id));q[Math.floor(i/3)].rv+=v.rev;q[Math.floor(i/3)].cs+=v.cost}));return q};
  const PLm=planM20(Y);const sgQ=[0,1,2,3].map(q=>PLm.slice(q*3,q*3+3).reduce((a,x)=>a+x.u1+x.u2,0));
- SG.concat(["Total"]).forEach(sg=>{const tot=sg==="Total";const q=qv(tot?ps:ps.filter(e=>segOfE20(e)===sg));const all={rv:q.reduce((a,x)=>a+x.rv,0),cs:q.reduce((a,x)=>a+x.cs,0)};
+ SG.concat(["기타 (구분손익)","Total"]).forEach(sg=>{const tot=sg==="Total";const q=sg==="기타 (구분손익)"?act41EtcQ(Y,ps):qv(tot?ps:ps.filter(e=>segOfE20(e)===sg));if(tot)act41EtcQ(Y,ps).forEach((x,i)=>{q[i].rv+=x.rv;q[i].cs+=x.cs});const all={rv:q.reduce((a,x)=>a+x.rv,0),cs:q.reduce((a,x)=>a+x.cs,0)};if(!tot&&sg==="기타 (구분손익)"&&!all.rv&&!all.cs)return;
   X.put(r,2,sg,{bold:true,fill:tot?X20.tot:null});q.concat([all]).forEach((x,i)=>{const op=tot?(i<4?x.rv-x.cs-sgQ[i]:all.rv-all.cs-sgQ.reduce((a,b)=>a+b,0)):"";[eok(x.rv),eok(x.rv-x.cs),op===""?"":eok(op)].forEach((v,j)=>X.put(r,3+i*3+j,v,{num:typeof v==="number",fill:tot?X20.tot:null,bold:tot,align:"right"}))});r++});
- X.put(r+1,2,`매출·매출이익 = ERP 결산 실적(~${G}) + 예상공정표 배분 예상 · 영업이익은 판관비 배부 기준이 없어 Total에만 표시(매출이익 − 분기 판관비) · 사업이익은 매출이익 기준`,{size:9,color:X20.grey,border:false});
+ X.put(r+1,2,`매출·매출이익 = 실적(~${G}: 구분손익 올린 달은 재무 숫자, 나머지는 ERP 결산 · 기타 = 구분손익 중 진행매출 외 계정) + 예상공정표 배분 예상 · 영업이익은 판관비 배부 기준이 없어 Total에만 표시(매출이익 − 분기 판관비) · 사업이익은 매출이익 기준`,{size:9,color:X20.grey,border:false});
  ws.pageSetup.printArea=`A1:T${r+2}`}
 function erpCapMW20(e){const v=String(e.capacity??"").replace(/,/g,"");const n=Number(v);return isNaN(n)?0:n}
 
@@ -6022,7 +6041,7 @@ function perfDet22(D){const{Y,ps,G,Fs}=D;const yms=months20(Y);const tot={rev:Ar
  const row=(lab,arr,fr,o={})=>{const t=o.pct?null:(o.prev||0)+arr.reduce((a,b)=>a+(b||0),0);return`<tr class="${o.cls||""}"><td style="text-align:left">${lab}</td><td class="n">${o.amt==null?"":f822(o.amt)}</td><td class="n">${o.prev==null?"":f822(o.prev)}</td>${arr.map((v,i)=>`<td class="n ${fr&&fr[i]?"fc22":""} ${yms[i]===G?"ps22-cur":""}">${o.pct?(v==null?"":(v*100).toFixed(1)+"%"):f822(v)}</td>`).join("")}<td class="n"><b>${o.pct?"":f822(t)}</b></td><td class="n">${o.rate==null?"":(o.rate*100).toFixed(1)+"%"}</td></tr>`};
  let body="";
  ps.forEach(e=>{const p=dashP20(e),F=Fs.get(e.id);const ct=n20(e.contract),bg=n20(e.budget);const gc=G<Y+"-01"?G:(G>Y+"-12"?Y+"-12":G);const cG=pfCum(e,gc);
-  const inY=yms.filter(ym=>ym<=G).reduce((a,ym)=>{const m=pfMon(e,ym);a.rev+=m.rev;a.cost+=m.cost;return a},{rev:0,cost:0});const c0=G<Y+"-01"?{rev:cG.rev,cost:cG.cost}:{rev:Math.max(0,cG.rev-inY.rev),cost:Math.max(0,cG.cost-inY.cost)};
+  const inY=yms.filter(ym=>ym<=G).reduce((a,ym)=>{const m=pfMonErp(e,ym);a.rev+=m.rev;a.cost+=m.cost;return a},{rev:0,cost:0});const c0=G<Y+"-01"?{rev:cG.rev,cost:cG.cost}:{rev:Math.max(0,cG.rev-inY.rev),cost:Math.max(0,cG.cost-inY.cost)};
   const rv=Array(12).fill(0),cs=Array(12).fill(0),fr=Array(12).fill(false);
   yms.forEach((ym,i)=>{const v=mv20(e,ym,F);rv[i]+=v.rev;cs[i]+=v.cost;if(!v.act)fr[i]=true;tot.rev[i]+=v.rev;tot.cost[i]+=v.cost;if(!v.act)tot.fr[i]=true});
   const sR=c0.rev+rv.reduce((a,b)=>a+b,0),sC=c0.cost+cs.reduce((a,b)=>a+b,0);const prog=ct?Math.min(1,pfCum(e,G).rev/ct):0;
@@ -6032,7 +6051,8 @@ function perfDet22(D){const{Y,ps,G,Fs}=D;const yms=months20(Y);const tot={rev:Ar
   body+=row("매출",rv,fr,{amt:ct,prev:c0.rev,rate:ct?sR/ct:null});
   body+=row("매입",cs,fr,{amt:bg,prev:c0.cost,rate:bg?sC/bg:null});
   if(ps22L){const vs=(e.vouchers||[]).filter(v=>!v.unappr&&!v.exclude);(e.lines||[]).forEach(l=>{const arr=Array(12).fill(0);let prev=0;vs.filter(v=>(v.tag||"미분류")===l.cat).forEach(v=>{const ym=String(v.ym||v.date).slice(0,7);if(ym<Y+"-01"){prev+=n20(v.amt);return}if(!ym.startsWith(Y))return;arr[+ym.slice(5)-1]+=n20(v.amt)});const s=prev+arr.reduce((a,b)=>a+b,0);body+=row(`<span class="hint">└ ${esc(l.cat)}</span>`,arr,null,{amt:+l.amt||0,prev,rate:+l.amt?s/+l.amt:null,cls:"ps22-l"})})}});
- const top=row("매출",tot.rev,tot.fr,{cls:"ps22-q"})+row("매입",tot.cost,tot.fr)+row("매출이익",tot.rev.map((v,i)=>v-tot.cost[i]),tot.fr,{cls:"ps22-q"});
+ const ET=act41Etc(Y,ps);ET.rev.forEach((v,i)=>{tot.rev[i]+=v;tot.cost[i]+=ET.cost[i]});
+ const top=row("매출",tot.rev,tot.fr,{cls:"ps22-q"})+row("매입",tot.cost,tot.fr)+row("매출이익",tot.rev.map((v,i)=>v-tot.cost[i]),tot.fr,{cls:"ps22-q"})+(ET.any?row(`<span class="hint">└ 그중 기타 (구분손익: ${esc(ET.lab)}${ET.unl?" · 현장 미연결 코드":""})</span>`,ET.rev,null,{cls:"ps22-l"}):"");
  return`<div class="pf-box"><div class="sc20t" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">국내 EPC 프로젝트 상세 (월간) <span class="hint">검은 글씨 = 실적 · 파란 기울임 = 예상 · 매입 실적 = ERP 결산, 공종 행 = 전표 분류 · 현장명을 누르면 예상공정표</span>
   <label class="hint" style="margin-left:auto;display:flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" ${ps22L?"checked":""} onchange="ps22L=this.checked;renderPerfst22()">공종(품목) 행 보기</label><span class="hint">주간 시트는 엑셀로</span></div>
   <div class="ps22-sc"><table class="pf-t ps22-t ps22-d"><thead>${head}</thead><tbody><tr class="ps22-p"><td colspan="17" style="text-align:left"><b>■ 전체 ${ps.length}개 현장 (실적 + 예상)</b></td></tr>${top}${body}</tbody></table></div></div>`}
@@ -6085,7 +6105,7 @@ function renderBizp22(){const el=$("tab-bizp");if(!el)return;if(!bz22Y)bz22Y=Str
  // 표 3: 분기별 매출인식 (분류별)
  const yms=months20(Y);const qv=es=>{const q=[0,1,2,3].map(()=>({rv:0,cs:0}));es.forEach(e=>yms.forEach((ym,i)=>{const v=mv20(e,ym,Fs.get(e.id));q[Math.floor(i/3)].rv+=v.rev;q[Math.floor(i/3)].cs+=v.cost}));return q};
  const sgQ=[0,1,2,3].map(q=>PL.slice(q*3,q*3+3).reduce((a,x)=>a+x.u1+x.u2,0));
- const r3=SG.concat(["Total"]).map(sg=>{const tot=sg==="Total";const q=qv(tot?ps:ps.filter(e=>segOfE20(e)===sg));const all={rv:q.reduce((a,x)=>a+x.rv,0),cs:q.reduce((a,x)=>a+x.cs,0)};if(!tot&&!all.rv&&!all.cs)return"";
+ const r3=SG.concat(["기타 (구분손익)","Total"]).map(sg=>{const tot=sg==="Total";const q=sg==="기타 (구분손익)"?act41EtcQ(Y,ps):qv(tot?ps:ps.filter(e=>segOfE20(e)===sg));if(tot)act41EtcQ(Y,ps).forEach((x,i)=>{q[i].rv+=x.rv;q[i].cs+=x.cs});const all={rv:q.reduce((a,x)=>a+x.rv,0),cs:q.reduce((a,x)=>a+x.cs,0)};if(!tot&&!all.rv&&!all.cs)return"";
   return`<tr class="${tot?"ps22-y":""}"><td style="text-align:left">${esc(sg)}</td>${q.concat([all]).map((x,i)=>{const op=tot?(i<4?x.rv-x.cs-sgQ[i]:all.rv-all.cs-sgQ.reduce((a,b)=>a+b,0)):null;return`<td class="n">${f822(x.rv)}</td><td class="n">${f822(x.rv-x.cs)}</td><td class="n">${op==null?"":f822(op)}</td>`}).join("")}</tr>`}).join("");
  const t3=`<div class="pf-box"><div class="sc20t">${Y}년 분기별 매출인식 <span class="hint">실적(~${D.G}) + 예상 · 영업이익은 판관비 배부 기준이 없어 Total에만</span></div><div class="ps22-sc"><table class="pf-t ps22-t"><thead><tr><th rowspan="2" style="text-align:left">분류</th>${["1Q","2Q","3Q","4Q","Total"].map(q=>`<th colspan="3">${q}</th>`).join("")}</tr><tr>${Array(5).fill("<th>매출</th><th>매출이익</th><th>영업이익</th>").join("")}</tr></thead><tbody>${r3}</tbody></table></div></div>`;
  el.innerHTML=`<div class="pf-bar">${yearSel22(Y,"bz22Y=this.value;renderBizp22()")}<span class="hint">억원 · VAT 별도 · 실적 ~${D.G} · 이후 예상공정표 배분</span><span style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-sm" onclick="xl20Biz(bz22Y)">엑셀 받기 (2시트)</button><button class="btn btn-sm btn-secondary" onclick="switchTab('plan')">계획 입력</button></span></div>`+(D.hasPlan||S("ta")?"":noPlan22())+`<div class="pf-wrap">${kp}${charts}${t1}${t2}${t3}</div>`}
@@ -7421,6 +7441,48 @@ function v40Init(){try{if(!$("v40css")){const st=document.createElement("style")
 }`;document.head.appendChild(st)}}catch(e){console.error(e)}}
 
 Object.values(XCOLS).forEach(def=>{def.old=def.sheet;def.sheet="사업관리_"+(def.sheet==="프로젝트"?"현장":def.sheet)});
+// ===================== v41 (2026-11-16): 실적 숫자 단일 기준 · 표 경계선 =====================
+// 화면마다 매출 실적을 다르게 세던 문제 정리
+//  (전) 주간보고 월간 누적 = ERP 결산만 / 실적 분석 = 재무 구분손익 전체 / 실적현황·경영계획 = ERP 결산만 + 대시보드에서 뺀 현장 누락 / 사업관리 주간보고 = 기성 청구 기준
+//  (후) 매출·원가 실적은 모두 act41Month 하나로
+//   · 구분손익(재무 배포) 올린 달: 현장 = 그 현장에 연결된 프로젝트 코드 진행매출(SI) · 기타 = SI 외 계정(전력·O&M·용역·상품 …) · 미연결 = 어느 현장에도 안 붙은 코드
+//   · 안 올린 달: 현장 = ERP 결산(진행매출월별) · 기타·미연결 = 0
+//   · 범위: 주간보고 '숨김'이 아닌 ERP 현장 전체 · 열람 프로젝트를 고른 화면은 고른 현장만 (기타·미연결 제외)
+//   · 실적관리(내장 화면)의 주간보고·경영보고는 같은 규칙에 이번 달 미마감분 '전표 추정'만 더함 (내장 화면 actYear41)
+const pfMonErp=pfMon;// ERP 결산 월 실적 그대로 (전회 누적 계산용)
+function act41Scope(){let sel=null;try{const k=typeof rsCtx35==="function"?rsCtx35():null;sel=k&&RS35_GET(k)}catch(e){}return{list:pfPS(),full:!sel}}
+function act41Proj(e,ym){if(segMonth(ym)){const v=segProj(ym,e.id)||{rev:0,cost:0};return{rev:v.rev,cost:v.cost,src:"seg"}}const m=pfMonErp(e,ym);return{rev:m.rev,cost:m.cost,src:"erp"}}
+function act41Month(ym,sc){sc=sc||act41Scope();const g=segMonth(ym);let pRev=0,pCost=0;sc.list.forEach(e=>{const v=act41Proj(e,ym);pRev+=v.rev;pCost+=v.cost});
+ const on=!!(g&&sc.full);const eRev=on?g.etcRev:0,eCost=on?g.etcCost:0,uRev=on?g.siRev-pRev:0,uCost=on?g.siCost-pCost:0;
+ return{ym,seg:!!g,g,pRev,pCost,eRev,eCost,uRev,uCost,rev:pRev+eRev+uRev,cost:pCost+eCost+uCost}}
+// 기존 함수들을 같은 규칙으로 (현장별 월 실적 · 월 합계 · 실적현황/경영계획 실적+예상)
+pfMon=function(e,ym){const v=act41Proj(e,ym);return{rev:v.rev,cost:v.cost}};
+pfActMonths=function(Y){const sc=act41Scope();return months20(Y).map(ym=>{const m=act41Month(ym,sc);return Object.assign(m,{pRev:m.pRev+m.uRev,pCost:m.pCost+m.uCost})})};
+actM20=function(Y,ps){ps=ps||pfPS();const sc={list:ps,full:act41Scope().full},G=lastYm20();const Fs=new Map(ps.map(e=>[e.id,fc20(e)]));
+ return months20(Y).map(ym=>{if(ym<=G){const m=act41Month(ym,sc);return{ym,rev:m.rev,cost:m.cost,act:true,eRev:m.eRev+m.uRev,eCost:m.eCost+m.uCost}}
+  let rev=0,cost=0;ps.forEach(e=>{const v=mv20(e,ym,Fs.get(e.id));rev+=v.rev;cost+=v.cost});return{ym,rev,cost,act:false,eRev:0,eCost:0}})};
+// 기타(구분손익 진행매출 외 + 미연결 코드) 월별 · 분기별
+function act41Etc(Y,ps){const sc={list:ps||pfPS(),full:act41Scope().full},G=lastYm20();const rev=[],cost=[];let unl=false;
+ months20(Y).forEach(ym=>{if(ym>G){rev.push(0);cost.push(0);return}const m=act41Month(ym,sc);rev.push(m.eRev+m.uRev);cost.push(m.eCost+m.uCost);if(Math.abs(m.uRev)>=5e5)unl=true});
+ return{rev,cost,unl,any:rev.some(v=>Math.abs(v)>=1)||cost.some(v=>Math.abs(v)>=1),lab:segEtcLab(Y)}}
+function act41EtcQ(Y,ps){const E=act41Etc(Y,ps);return[0,1,2,3].map(q=>({rv:E.rev.slice(q*3,q*3+3).reduce((a,b)=>a+b,0),cs:E.cost.slice(q*3,q*3+3).reduce((a,b)=>a+b,0)}))}
+// 올해 누계 (결산 확정월까지, 전체 범위) — 사업관리 주간보고 · 요약용
+function act41Ytd(Y){Y=String(Y);const sc={list:ERPDB?ERPDB.projects.filter(e=>e.show!==false):[],full:true};const last=pfLastYm()||"";let rev=0,p=0,e=0,m=0;
+ months20(Y).forEach((ym,i)=>{if(ym>last)return;const a=act41Month(ym,sc);rev+=a.rev;p+=a.pRev;e+=a.eRev+a.uRev;m=i+1});return{rev,p,e,m}}
+// 사업관리 주간보고 '누계 매출': 전체 = 사업부 누계 / 현장 고르면 그 현장(ERP 연결)만
+function rpSales41(plist,w){try{const Y=String(w.y||todayStr().slice(0,4));if(rpScope==="all")return act41Ytd(Y).rev;const last=pfLastYm()||"";let t=0;
+ plist.forEach(p=>{const e=typeof erpLinkOf==="function"&&erpLinkOf(p);if(!e)return;months20(Y).forEach(ym=>{if(ym<=last)t+=act41Proj(e,ym).rev})});return t}catch(e){return 0}}
+// ---------- 표 경계선: 실적관리(내장 화면) 표 칸 선 진하게 + 대시보드 실적 표(pf-t)에도 세로선 ----------
+{const _sk=erpSkin;erpSkin=function(){_sk.apply(this,arguments);try{const d=$("erpFrame").contentDocument,s=d&&d.getElementById("dashSkin");if(!s||s.textContent.includes("--grid"))return;
+ s.textContent+=`\n:root,:root[data-theme=light]{--grid:#cfd5de;--grid2:#9ea8b6}\n:root[data-theme=dark]{--grid:#363b4a;--grid2:#565f75}\n@media print{:root,:root[data-theme]{--grid:#b9c0cb;--grid2:#7d8796}}`}catch(e){}}}
+(function(){const st=document.createElement("style");st.id="v41css";st.textContent=`
+.pf-t{border:1px solid var(--border-strong)}.pf-t th,.pf-t td{border:1px solid var(--border)}.pf-t tr:first-child th{border-top:1px solid var(--border-strong)}
+.pf-t thead tr:last-child th,.pf-t>tbody>tr:first-child>th{border-bottom:1.5px solid var(--border-strong)}
+.pf-t tr.tot td,.ps22-t tr.ps22-y td{border-top:2px solid var(--border-strong)}.pf-t tr.grp td{border-top:1.5px solid var(--border-strong)}`;document.head.appendChild(st)})();
+
+// v42: 설정 탭에서 테마를 바꿔도 실적관리 프레임이 같이 바뀌게 (모든 테마 적용 경로 공통)
+{const _at42=applyTheme;applyTheme=function(){const r=_at42.apply(this,arguments);erpThemeSync42();return r}}
+
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();applyTheme();applySecs();renderAll();
