@@ -845,6 +845,7 @@ table.t tr.sub td{font-weight:600;background:var(--hover)}
 table.t th.ref,table.t td.ref{color:var(--muted);border-left:1.5px dashed var(--grid2)}
 table.t tbody tr:hover td{background:var(--hover)}
 .mon41{margin-top:8px;line-height:1.6}
+table.t tr.ref45 td{color:var(--muted);background:var(--hover);font-style:italic}table.t tr.r45a td{border-top:2px dashed var(--grid2)}
 td.click{cursor:pointer;color:var(--brand)}
 td.click:hover{text-decoration:underline}
 .badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;line-height:17px;white-space:nowrap}
@@ -1777,7 +1778,7 @@ function rWeekly(){
  <div class="scroll"><table class="t" id="t8m"><thead><tr><th>구분</th>${lab.map(l=>`<th>${l}</th>`).join("")}<th>누적 총액</th></tr></thead><tbody>`+
  rowM("계약",R.mon.order,R.tot.order)+rowM("매출",R.mon.rev,R.tot.rev)+rowM("매출이익",R.mon.pl,R.tot.pl)+rowM("수금",R.mon.coll,R.tot.coll)+
  `<tr><td title="그 달까지 발행한 계산서 중 기준일 현재 아직 못 받은 금액 (나중에 입금되면 0). 칸을 누르면 어느 청구인지 표시">미수금</td>${R.mon.ar.map((v,i)=>`<td class="n${v?" click":""}" ${v?`onclick="showAR40('${R.cols[i]}')" title="눌러서 구성 보기"`:""}>${v==null?"":U(v,1)}</td>`).join("")}<td class="n"><b>${U(R.tot.ar,1)}</b></td></tr>`+
- rowM("계약잔액",R.mon.backlog,R.tot.backlog)+`</tbody></table></div>`+monNote41(R)+`</div>`;
+ rowM("계약잔액",R.mon.backlog,R.tot.backlog)+refRows45(R)+`</tbody></table></div>`+monNote41(R)+`</div>`;
  h+=`<div class="card"><div class="row" style="justify-content:space-between"><div><b>주간 확정</b><div class="muted" style="font-size:12px">이번 주 숫자(KPI·현장별 누적 매출액·수금)를 저장해 두면 다음 주 보고에서 '전주' 값과 증감이 자동으로 나옵니다. 다시 누르면 덮어씁니다.</div></div><button class="btn p" id="snapBtn" onclick="snapshot()">${wk().snap?"다시 확정":"이번 주 확정"}</button></div></div>`;
  $("main").innerHTML=h}
 /* ---------- 실적관리 — 프로젝트별 월별 (2026-11-16) ----------
@@ -1863,8 +1864,12 @@ function actPct44(p){const v=pctIn44(p.pmActual);if(v!=null)return v;try{const P
 // 하도급사 = 대시보드 현장 › 용역사 (없으면 현장 기본정보의 하도급사)
 function subOf44(p){try{const P=window.parent,d=P.dashOf&&P.dashOf(p);if(!d)return"";const L=(P.subsOf&&P.subsOf(d.id))||[];const n=[...new Set(L.map(x=>P.subName?P.subName(x):(x.vendorName||"")).filter(Boolean))];return n.join(", ")||s(d.vendor)}catch(e){return""}}
 // v41: 월간 누적 매출액이 어떻게 구성됐는지 한 줄로 (실적 분석·실적현황 카드와 바로 맞춰 볼 수 있게)
+// v47: 월간 누적 실적 아래 회색 참고 줄 — 진행매출(회계)과 미청구 누계 (화면 확인용 · PPT 표 이미지·값만 복사에는 안 들어감)
+function refRows45(R){const A=R.act;if(!A)return"";let cp=0,cs=0;const p=[],u=[];R.cols.forEach((ym,i)=>{if(ym>R.M){p.push(null);u.push(null);return}cp+=A.pR[i]||0;cs+=R.mon.rev[i]||0;p.push(A.pR[i]||0);u.push(cp-cs)});
+ const td=v=>`<td class="n">${v==null?"":U(v,1)}</td>`;
+ return`<tr class="ref45 r45a"><td title="회계 기준 매출 (ERP 진행매출 · 재무 구분손익) — 계약된 프로젝트만 · PPT 복사 제외">진행매출(회계) <span class="hint">참고</span></td>${p.map(td).join("")}<td class="n">${U(cp,1)}</td></tr><tr class="ref45"><td title="그 달 말까지 올해 진행매출 누계 − 계산서 매출 누계 = 공사는 했지만 아직 세금계산서를 발행하지 않은 금액 · PPT 복사 제외">미청구 누계 <span class="hint">참고</span></td>${u.map(td).join("")}<td class="n">${U(cp-cs,1)}</td></tr>`}
 function monNote41(R){const A=R.act;const sum=a=>a.reduce((t,v)=>t+(v||0),0);const t=sum(R.mon.rev),p=A?sum(A.pR):0,k=R.kpi;
- return`<div class="hint mon41">매출 = 기성 확정 후 발행한 세금계산서 (선급금 제외 · VAT 별도) · 계약된 프로젝트만 (O&M·전력 등 기타 매출 제외) · 올해 매출 <b>${U(t,1)}</b> · 같은 기간 진행매출(회계) ${U(p,1)} → 차이 ${U(p-t,1)} = 공사는 했지만 아직 계산서를 발행하지 않은 금액(미청구공사) · 매출이익 = 매출 × 현장 목표 GP · 선급금 수령 누계 ${U(k.advIn,1)} (VAT 포함, 수금과 별도) · 진행매출·기타 매출은 아래 '진행매출(회계)' 표와 대시보드 실적 분석</div>`}
+ return`<div class="hint mon41">매출 = 기성 확정 후 발행한 세금계산서 (선급금 제외 · VAT 별도) · 계약된 프로젝트만 (O&M·전력 등 기타 매출 제외) · 올해 매출 <b>${U(t,1)}</b> · 같은 기간 진행매출(회계) ${U(p,1)} → 차이 ${U(p-t,1)} = 공사는 했지만 아직 계산서를 발행하지 않은 금액(미청구공사) · 매출이익 = 매출 × 현장 목표 GP · 선급금 수령 누계 ${U(k.advIn,1)} (VAT 포함, 수금과 별도) · 회색 참고 줄(진행매출·미청구 누계)은 화면 확인용이라 PPT 표·값 복사에는 안 들어감 · 진행매출·기타 매출 상세는 아래 '진행매출(회계)' 표와 대시보드 실적 분석</div>`}
 function showSales45(pid){const p=proj(pid),c=calcProject(p,WI().cutoff,opt());const B=c.bills.filter(b=>b.date&&b.date<=c.D).sort((a,b)=>a.date<b.date?-1:1);
  let h=`<div class="card-h"><div><h2>${esc(NM(p))} — 세금계산서 내역 (누적 매출액 산출)</h2><div class="desc">기준일 ${c.D} · 매출 = (기성 계산서 + 선급금 정산분) ÷ 1.1 (VAT 별도) · 선급금 계산서는 매출에서 빼고 따로 표시 · 구분이 틀리면 사업관리 › 기성 청구에서 수정 · 진행매출(회계) 누적 ${W(c.revCum)}원</div></div><div class="acts"><button class="btn s" onclick="closeModal()">닫기</button></div></div>
  <div class="scroll"><table class="t"><thead><tr><th>발행일</th><th>구분</th><th>적요</th><th>발행액 (VAT 포함)</th><th>선급금 정산분</th><th>매출 (VAT 별도)</th><th>입금 (기준일까지)</th><th>미수</th></tr></thead><tbody>`+
