@@ -36,6 +36,16 @@ npm run preview          # 빌드 후 로컬 서버 http://localhost:8787
 npm run seed -- http://localhost:8787   # 로컬 서버에 초기 데이터 넣기
 ```
 
+운영 서버에 일부 레코드만 추가·수정할 때 (서버 전체를 덮어쓰지 않음 — 그사이 팀원이 고친 다른 칸은 유지):
+
+```bash
+node scripts/patch.mjs https://se-epc.com data/patch/<파일>.json           # 미리보기만 (아무것도 안 바뀜)
+node scripts/patch.mjs https://se-epc.com data/patch/<파일>.json --apply   # 반영 (직전 백업: data/backup/before-patch-*.json)
+```
+
+- 패치 항목: `add`(없을 때만 추가) · `set`(지정한 칸만 수정) · `append`(글 끝에 덧붙임) — 형식은 scripts/patch.mjs 상단 주석
+- 미리보기에 "서버에 없음 → 건너뜀"이 나오면 id 확인 후 반영. 같은 패치를 두 번 돌려도 중복 반영 안 됨
+
 기존 HTML을 새 버전으로 바꿀 때:
 
 ```bash
