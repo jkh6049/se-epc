@@ -160,7 +160,7 @@
   document.head.appendChild(css);
   var pill = document.createElement("div");
   pill.id = "livePill";
-  pill.innerHTML = '<span class="dot"></span><span class="txt">연결 중…</span><a href="/api/export" title="서버 데이터 전체를 백업 파일(JSON)로 받기. 관리 › 백업 불러오기로 복원">백업</a><div id="livePop"></div>';
+  pill.innerHTML = '<span class="dot"></span><span class="txt">연결 중…</span><div id="livePop"></div>';
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function paint() {
     if (!document.body) return;
