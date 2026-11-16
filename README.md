@@ -9,6 +9,13 @@ Cloudflare Workers 위에서 도는 팀 공용 사업관리 대시보드. 모든
 | `/api/export` | 서버 데이터 전체 백업(JSON). 대시보드의 '백업 불러오기'로 복원 가능 |
 | `/api/health` | 레코드 수·접속자 수 확인 |
 
+## 공용 비밀번호
+
+- 모든 화면·API는 공용 비밀번호를 입력해야 열림 (맞으면 30일 유지, `/logout` 으로 로그아웃)
+- 비밀번호는 코드에 넣지 않음 (저장소 공개). 운영: `npx wrangler secret put SITE_PASSWORD` / 로컬: `.dev.vars` 에 `SITE_PASSWORD="..."` (git 제외)
+- 비밀번호를 바꾸면 기존 로그인은 전부 풀림
+- seed 스크립트는 SITE_PASSWORD 환경변수 또는 .dev.vars 값을 `x-site-password` 헤더로 보냄
+
 ## 구조
 
 ```
@@ -32,7 +39,9 @@ data/       초기 데이터 (git 제외 — 회사 데이터는 저장소에 �
 
 ```bash
 npm install
-npm run preview          # 빌드 후 로컬 서버 http://localhost:8787
+# 처음 한 번: .dev.vars 파일에 SITE_PASSWORD="공용비밀번호" 작성
+npm run dev              # 빌드 후 로컬 서버 실행 http://localhost:8787 (서버·DB·실시간 동기화 전부)
+npm run dev:next         # React 신규 화면만 Vite로 개발 (http://localhost:5173/next/, 8787 서버 같이 켜둘 것)
 npm run seed -- http://localhost:8787   # 로컬 서버에 초기 데이터 넣기
 ```
 
@@ -45,6 +54,14 @@ node scripts/patch.mjs https://se-epc.com data/patch/<파일>.json --apply   # �
 
 - 패치 항목: `add`(없을 때만 추가) · `set`(지정한 칸만 수정) · `append`(글 끝에 덧붙임) — 형식은 scripts/patch.mjs 상단 주석
 - 미리보기에 "서버에 없음 → 건너뜀"이 나오면 id 확인 후 반영. 같은 패치를 두 번 돌려도 중복 반영 안 됨
+
+구분손익(재무 월별 배포 엑셀): 평소에는 주간보고 › 실적관리 — 프로젝트별 월별 의 [구분손익 업로드] 버튼으로 올림.
+로컬에서 먼저 올려 검증한 반영분(월별 구분손익 + 프로젝트 코드 연결)을 운영에 그대로 옮길 때:
+
+```bash
+node scripts/segpl-push.mjs http://localhost:8787 https://se-epc.com           # 미리보기
+node scripts/segpl-push.mjs http://localhost:8787 https://se-epc.com --apply   # 반영 (직전 백업: data/backup/before-segpl-*.json)
+```
 
 기존 HTML을 새 버전으로 바꿀 때:
 

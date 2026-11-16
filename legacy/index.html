@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>EPC 사업관리 대시보드 v1.2</title>
+<title>SE EPC 사업부 관리 시스템</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><meta name="theme-color" content="#004c7f">
 <style>
 :root{
  color-scheme:light;
@@ -56,7 +57,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Ap
 .layout{display:flex;min-height:100vh}
 .sidebar{width:var(--sb-w);flex:0 0 var(--sb-w);background:var(--sb-bg);color:var(--sb-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-width:thin}
 .sb-brand{display:flex;align-items:center;gap:10px;padding:16px 16px 12px;cursor:pointer}
-.sb-logo{width:36px;height:36px;border-radius:9px;background:var(--sb-accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 36px}
+.sb-logo{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex:0 0 36px}.sb-logo img{width:100%;height:100%;display:block}
 .sb-brand .t{font-size:14.5px;font-weight:700;line-height:1.25;word-break:keep-all}.sb-brand .d{font-size:11px;color:var(--sb-dim);margin-top:2px}
 .sb-sec{font-size:10.5px;letter-spacing:1px;color:var(--sb-dim);padding:14px 16px 4px;text-transform:uppercase}
 .sb-nav{display:flex;flex-direction:column;padding:4px 10px}
@@ -270,6 +271,31 @@ tr.flash td{animation:rowflash 2.6s ease-out}
 .sb-grp .chev{font-size:11px;color:var(--sb-dim);transition:transform .15s}.sb-group.closed .chev{transform:rotate(-90deg)}.sb-group.closed .sb-nav{display:none}
 .sidebar.collapsed .sb-grp{display:none}.sidebar.collapsed .sb-group{border-top:1px solid var(--sb-bg2);margin-top:6px;padding-top:4px}.sidebar.collapsed .sb-group.closed .sb-nav{display:flex}
 .sb-item.soon{opacity:.45;cursor:default}
+/* ── 모바일 반응형 (휴대폰에서 화면이 축소돼 보이던 문제: 화면 폭을 넘는 요소 정리) ── */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr))!important}.calendar-header-cell,.calendar-cell{min-width:0;overflow:hidden}
+@media(max-width:900px){
+ html,body{overflow-x:hidden;max-width:100%}
+ .sidebar{box-shadow:none}.sidebar.open{box-shadow:4px 0 20px rgba(0,0,0,.3)}
+ #livePill{bottom:calc(64px + env(safe-area-inset-bottom))!important;right:10px!important}
+ .modal{max-height:92dvh}
+ /* 입력창(모달)이 열려 있으면 하단 탭바·연결 표시를 숨겨 저장 버튼이 가려지지 않게 */
+ body:has(.modal-backdrop.open) .mob-tabs,body:has(.modal-backdrop.open) #livePill{display:none!important}
+}
+@media(max-width:640px){
+ .topbar{flex-wrap:wrap;gap:8px;padding:8px 12px}
+ .topbar .tb-search{order:3;flex:1 1 100%;max-width:none;padding:6px 10px}
+ .topbar .tb-right{gap:6px}
+ .topbar .tb-lb{display:none}
+ .topbar .tb-right .btn{padding:0 10px;height:36px;min-width:36px;display:inline-flex;align-items:center;justify-content:center}
+ .topbar .tb-icon{width:34px;height:36px}
+ .main-head h2{font-size:18px}
+ #livePill{padding:6px 10px!important;font-size:11px!important;gap:6px!important}#livePill .txt{display:none}
+ /* 1fr 그리드는 줄바꿈 없는 글자 길이만큼 늘어나므로 minmax(0,1fr)로 폭 고정 */
+ .card-grid{grid-template-columns:minmax(0,1fr)!important}
+ .pg-wrap{grid-template-columns:minmax(0,1fr)!important}
+ .lg-task{display:inline-block;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head><body>
@@ -278,7 +304,7 @@ tr.flash td{animation:rowflash 2.6s ease-out}
 <div class="sb-backdrop" id="sbBackdrop" onclick="toggleSidebar(false)"></div>
 <aside class="sidebar" id="sidebar">
  <div class="sb-collapse"><button onclick="toggleCollapse()" id="sbColBtn" title="메뉴 접기">‹</button></div>
- <div class="sb-brand" onclick="renameTitle()" title="클릭하면 제목 변경"><div class="sb-logo" id="sbLogo">E</div><div><div class="t" id="appTitle">EPC 사업관리 대시보드</div><div class="d" id="sbSub">사업관리 · O&amp;M</div></div></div>
+ <div class="sb-brand" onclick="renameTitle()" title="클릭하면 제목 변경"><div class="sb-logo" id="sbLogo"><img src="/brand/mark.svg" alt="S-Energy"></div><div><div class="t" id="appTitle">SE EPC 사업부 관리 시스템</div><div class="d" id="sbSub">사업관리 · O&amp;M</div></div></div>
  <div class="sb-today" id="todayDisplay"></div>
  <div class="sb-group" data-g="common"><button class="sb-grp" onclick="toggleGrp(this)" title="공통 접기/펼치기"><span>공통</span><span class="chev">▾</span></button>
  <nav class="sb-nav">
@@ -328,8 +354,8 @@ tr.flash td{animation:rowflash 2.6s ease-out}
  <div class="tb-right">
   <span class="tb-info" id="tbInfo"></span>
   <div style="position:relative"><button class="btn" onclick="toggleMenu('newMenu')">+ 만들기</button><div class="menu-pop" id="newMenu"><button onclick="closeMenus();openProjectModal()">▣ 새 현장</button><button onclick="closeMenus();openTaskModal()">☑ 새 Task</button><button onclick="closeMenus();openEventModal()">▦ 새 일정</button><button onclick="closeMenus();openRecurModal()">↻ 새 정기 업무</button><button onclick="closeMenus();openPlantModal()">⚙ 발전소 추가</button><button onclick="closeMenus();openVendorModal()">☷ 업체 추가</button></div></div>
-  <button class="btn btn-secondary" id="helpBtn" onclick="toggleHelp()" title="이 화면의 용어 설명">? 도움말</button>
-  <button class="btn btn-secondary" onclick="switchTab('report')">▤ 요약보고</button>
+  <button class="btn btn-secondary" id="helpBtn" onclick="toggleHelp()" title="이 화면의 용어 설명">?<span class="tb-lb"> 도움말</span></button>
+  <button class="btn btn-secondary" onclick="switchTab('report')" title="요약보고">▤<span class="tb-lb"> 요약보고</span></button>
   <button class="tb-icon" onclick="exportBackup()" title="데이터 백업 (HTML)">⇩</button>
   <button class="tb-icon" onclick="toggleTheme()" id="tbTheme" title="테마">☾</button>
   <button class="tb-icon" onclick="switchTab('data')" title="관리·설정">⚙</button>
@@ -1132,6 +1158,16 @@ table.mst input.ci{min-width:90px}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .pb-k{white-space:nowrap}.pb-l{flex:1 1 auto;min-width:0}.pbar .pb-sel.pb-btn{flex:1 1 380px;min-width:260px;max-width:600px}.pb-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--text);font:inherit;font-weight:600;cursor:pointer;text-align:left}.pb-btn:hover{border-color:var(--brand)}.pb-btn .pb-bt{width:auto!important;flex:1 1 auto;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pb-btn .pb-cv{width:auto!important;flex:none;opacity:.6;font-size:12px}.pc-m span,.pc-m b{white-space:nowrap}@media print{:root,[data-theme]{--line:#7c8796!important;--line2:#a3acb9!important}main table th,main table td{border:1px solid #8a94a3!important}main table th{border-color:#6b7685!important}#doc .pc,#doc .sk,#doc .sc,#doc .kpi,#doc .card,.rdoc .sk,.card{border:1px solid #6b7685!important}#doc .pc{border-top-width:3px!important}.doc table.mst{table-layout:auto!important}.doc table.mst th{word-break:keep-all!important;line-height:1.2}.doc table.mst td{overflow-wrap:anywhere}table th{overflow-wrap:anywhere}}.apv30{border:0;cursor:pointer;font:inherit}.apv30:hover{filter:brightness(.92);outline:1px solid currentColor}.rm34h{margin-top:18px;border-left:4px solid var(--brand)}.rm34h:first-of-type{margin-top:0}.rm34p+.rm34p{break-before:page;page-break-before:always}.rs35b{display:flex;gap:10px;align-items:center;padding:8px 12px;margin-bottom:12px;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:8px;background:var(--card);font-size:13px}.rs35k{color:var(--muted);font-size:12px;white-space:nowrap}.rs35b b{white-space:nowrap}.rs35n{flex:1;min-width:0;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rs35b .btn{white-space:nowrap}@media print{.rs35b{display:none!important}}body.print-doc .rs35b{display:none!important}body.embed .side{display:none!important}body.embed .wrap{margin-left:0!important}
+@media(max-width:640px){.top{padding:8px 12px;gap:8px}.wk{flex-wrap:wrap;max-width:100%}.wk input[type=date]{min-width:0;max-width:140px}main{padding:12px 12px 40px}}
+/* v40 휴대폰: 1단 칸을 minmax(0,1fr)로(1fr은 넓은 표 폭만큼 늘어나 화면 밖으로 밀림) · 현장 선택 바 줄바꿈 · 카드 2칸 · 차트 1단 */
+@media screen and (max-width:900px){.layout2,.notes,.flow{grid-template-columns:minmax(0,1fr)!important}.layout2>*,.notes>*,.flow>*{min-width:0}}
+@media screen and (max-width:640px){
+ .pbar .pb-sel.pb-btn{flex:1 1 100%!important;min-width:0!important;max-width:none!important}
+ .skg{grid-template-columns:repeat(2,minmax(0,1fr))!important}.skg>*{min-width:0}
+ .sgrid>[class*="c"]{grid-column:span 12!important;min-width:0}
+ .rinfo th,.rinfo td{white-space:normal!important}
+ table.t.rules,.card>table.t,table.t.rinfo{display:block;overflow-x:auto;max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -1491,6 +1527,8 @@ function calcProject(p,D,opt){
 function revCumAt(c,ym){let v=0;for(const r of c.months){if(r.ym<=ym)v=r.revCum;else break}return v}
 function limOf(c,ym){return ym===c.M?c.D:ymEnd(ym)}
 function collAt(c,ym,exact){const L=limOf(c,ym);let t=0;for(const e of c.events){if(e.date>L)continue;if(!exact||e.date.slice(0,7)===ym)t+=e.amt}return t}
+// v40: 지난 달 미수금 = 그 달 말일까지 발행한 청구 중 '기준일 현재' 아직 못 받은 금액 (나중에 입금되면 그 달 칸도 0)
+function arNow40(c,ym){const L=limOf(c,ym);return c.bills.reduce((t,b)=>{if(!b.date||b.date>L)return t;const paid=(b.events||[]).filter(e=>e.date<=c.D).reduce((s,e)=>s+e.amt,0);return t+Math.max(0,b.amt-paid)},0)}
 function issuedAt(c,ym){const L=limOf(c,ym);return c.bills.reduce((t,b)=>b.date&&b.date<=L?t+b.amt:t,0)}
 
 function checksProject(p,D,opt,c){
@@ -1548,7 +1586,7 @@ function buildReport(projects,D,opt){
  for(const ym of cols){if(ym>M){let pc=0,has=0;for(const c of list){const v=planIn(c,ym);if(v){pc+=v;has=1}}Object.entries(mon).forEach(([k,a])=>a.push(k==="coll"&&has?pc:null));continue}
   let o=0,r=0,pl=0,co=0,ar=0,bk=0;
   for(const c of list){const cd=s(c.p.contractDate);if(cd.slice(0,7)===ym&&cd<=D)o+=c.contract;const row=c.map[ym];if(row){r+=row.rev;pl+=row.pl}
-   {const a=collAt(c,ym,true),pv=ym===M?planIn(c,ym):null;co+=pv!=null?Math.max(a,pv):a}ar+=issuedAt(c,ym)-collAt(c,ym,false);if(cd&&cd<=limOf(c,ym))bk+=c.contract-revCumAt(c,ym)}
+   {const a=collAt(c,ym,true),pv=ym===M?planIn(c,ym):null;co+=pv!=null?Math.max(a,pv):a}ar+=ym===M?issuedAt(c,ym)-collAt(c,ym,false):arNow40(c,ym);if(cd&&cd<=limOf(c,ym))bk+=c.contract-revCumAt(c,ym)}
   mon.order.push(o);mon.rev.push(r);mon.pl.push(pl);mon.coll.push(co);mon.ar.push(ar);mon.backlog.push(bk)}
  const sum=a=>a.reduce((t,v)=>t+(v||0),0),at=a=>a[cols.indexOf(M)];
  const tot={order:sum(mon.order),rev:sum(mon.rev),pl:sum(mon.pl),coll:sum(mon.coll),ar:at(mon.ar),backlog:at(mon.backlog)};
@@ -1696,18 +1734,21 @@ function rWeekly(){
   <td class="n ref">${P(c.execRate)}</td><td class="ref"><input class="ci num" value="${esc(p.pmActual)}" placeholder="—" onchange="setPF('${p.id}','pmActual',this.value,1)"></td><td class="c ref">${up?'<span class="badge b-ok">완료</span>':`<button class="badge b-warn" style="cursor:pointer;border:0" title="계획공정률·RAG·현안이 지난주와 같으면 눌러서 확인 처리" onclick="setPF('${p.id}','fieldWeek',WI().mon,1)">미갱신 · 변동없음 확인</button>`}</td></tr>`}).join("")+`</tbody></table></div>`+
  notesHtml("notes7","현장관리 활동",[["fPrev","전주",w.pm,w.pf],["fCur","금주",w.mon,w.fri]])+`</div>`;
  // 8p
- h+=`<div class="card"><div class="card-h"><div><h2>실적관리 — 프로젝트별 (${UN()})</h2><div class="desc">기 매출총액 = 전월 말 누적 · 매출액 = ${mm}월 1일~${MD(w.cutoff)} · 수금은 VAT 포함 · 누적매출액 클릭 시 산출 근거</div></div><div class="acts"><button class="btn s p" onclick="pptImg('perf')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('perf')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
- <div class="scroll"><table class="t" id="t8"><thead><tr><th rowspan="2">번호</th><th rowspan="2">고객/발주처</th><th rowspan="2">현장명</th><th rowspan="2">계약금액</th><th rowspan="2">기 매출총액</th><th colspan="4">매출</th><th colspan="4">수금</th><th rowspan="2">기타</th><th rowspan="2" class="ref" title="확정 = ERP 마감값 · 추정 = 미마감 월을 전표로 계산">당월 매출<br>확정/추정</th><th rowspan="2" class="ref">전주 대비<br>누적매출</th></tr><tr><th>계산서발행일</th><th>매출액</th><th>누적매출액</th><th>수주잔액</th><th>수금일</th><th>수금액</th><th>누적수금액</th><th>미수금</th></tr></thead><tbody>`;
+ h+=`<div class="card"><div class="card-h"><div><h2>실적관리 — 프로젝트별 (${UN()})</h2><div class="desc">${R.M.slice(0,4)}년 기준 · 전년 누적 = ${+R.M.slice(0,4)-1}년 말까지 누적 매출 · 매출액 = ${mm}월 1일~${MD(w.cutoff)} · ${R.M.slice(2,4)}년 누적 = 1월~${MD(w.cutoff)} · 수주잔액·미수금은 전체 기간 · 수금은 VAT 포함 · ${R.M.slice(2,4)}년 누적 매출 클릭 시 산출 근거</div></div><div class="acts"><button class="btn s p" onclick="pptImg('perf')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('perf')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
+ <div class="scroll"><table class="t" id="t8"><thead><tr><th rowspan="2">번호</th><th rowspan="2">고객/발주처</th><th rowspan="2">현장명</th><th rowspan="2">계약금액</th><th rowspan="2">전년 누적</th><th colspan="4">매출</th><th colspan="4">수금</th><th rowspan="2">기타</th><th rowspan="2" class="ref" title="확정 = ERP 마감값 · 추정 = 미마감 월을 전표로 계산">당월 매출<br>확정/추정</th><th rowspan="2" class="ref">전주 대비<br>누적매출</th></tr><tr><th>계산서발행일</th><th>매출액</th><th>${R.M.slice(2,4)}년 누적</th><th>수주잔액</th><th>수금일</th><th>수금액</th><th>${R.M.slice(2,4)}년 누적</th><th>미수금</th></tr></thead><tbody>`;
  const S={c:0,pv:0,cu:0,cm:0,bk:0,mc:0,cc:0,ar:0};
- R.list.forEach((c,i)=>{const p=c.p;S.c+=c.contract;S.pv+=c.revPrev;S.cu+=c.revCur;S.cm+=c.revCum;S.bk+=c.backlog;S.mc+=c.monthColl;S.cc+=c.collCum;S.ar+=c.ar;
+ R.list.forEach((c,i)=>{const p=c.p,y=yrOf(c);S.c+=c.contract;S.pv+=y.py.rev;S.cu+=c.revCur;S.cm+=y.revY;S.bk+=c.backlog;S.mc+=c.monthColl;S.cc+=y.collY;S.ar+=c.ar;
   const pr=ps&&ps.rows&&ps.rows[p.id];const dv=pr?c.revCum-pr.revCum:null;
-  h+=`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${U(c.revPrev,1)}</td><td class="c">${c.issueDates.map(MD).join(", ")}</td><td class="n">${U(c.revCur,1)}</td><td class="n click" onclick="showBasis('${p.id}')">${U(c.revCum,1)}</td><td class="n">${U(c.backlog)}</td><td class="c">${c.collDates.map(MD).join(", ")}</td><td class="n">${U(c.monthColl,1)}</td><td class="n">${U(c.collCum,1)}</td><td class="n">${U(c.ar,1)}</td><td data-copy="${esc(p.memo)}"><input class="ci" value="${esc(p.memo)}" onchange="setPF('${p.id}','memo',this.value,1)" placeholder="—"></td><td class="c ref">${c.st?`<span class="badge ${c.st==="확정"?"b-fix":c.st==="수기"?"b-info":"b-est"}" title="${c.st==="수기"?"ERP 미등록 현장 — PPT·실적현황 기준으로 직접 입력한 값":c.st==="확정"?"이번 달 매출이 ERP 진행매출월별 마감값 그대로입니다":"이번 달은 ERP 월마감 전이라, 기준일까지의 전표(원가)로 진행률·매출을 계산한 값입니다. 마감 후 진행매출월별을 올리면 확정값으로 바뀝니다"}">${c.st}</span>`:""}</td><td class="n ref">${dv==null?"—":(dv>=0?"+":"")+U(dv)}</td></tr>`});
+  h+=`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${U(y.py.rev,1)}</td><td class="c">${c.issueDates.map(MD).join(", ")}</td><td class="n">${U(c.revCur,1)}</td><td class="n click" onclick="showBasis('${p.id}')">${U(y.revY,1)}</td><td class="n">${U(c.backlog)}</td><td class="c">${c.collDates.map(MD).join(", ")}</td><td class="n">${U(c.monthColl,1)}</td><td class="n">${U(y.collY,1)}</td><td class="n">${U(c.ar,1)}</td><td data-copy="${esc(p.memo)}"><input class="ci" value="${esc(p.memo)}" onchange="setPF('${p.id}','memo',this.value,1)" placeholder="—"></td><td class="c ref">${c.st?`<span class="badge ${c.st==="확정"?"b-fix":c.st==="수기"?"b-info":"b-est"}" title="${c.st==="수기"?"ERP 미등록 현장 — PPT·실적현황 기준으로 직접 입력한 값":c.st==="확정"?"이번 달 매출이 ERP 진행매출월별 마감값 그대로입니다":"이번 달은 ERP 월마감 전이라, 기준일까지의 전표(원가)로 진행률·매출을 계산한 값입니다. 마감 후 진행매출월별을 올리면 확정값으로 바뀝니다"}">${c.st}</span>`:""}</td><td class="n ref">${dv==null?"—":(dv>=0?"+":"")+U(dv)}</td></tr>`});
  h+=`<tr class="sum"><td></td><td></td><td>합계</td><td class="n">${U(S.c)}</td><td class="n">${U(S.pv,1)}</td><td></td><td class="n">${U(S.cu,1)}</td><td class="n">${U(S.cm,1)}</td><td class="n">${U(S.bk)}</td><td></td><td class="n">${U(S.mc,1)}</td><td class="n">${U(S.cc,1)}</td><td class="n">${U(S.ar,1)}</td><td></td><td class="ref"></td><td class="ref"></td></tr></tbody></table></div></div>`;
+ h+=yearPerf(R,est.length>0);
  const lab=R.cols.map(ym=>{const m=+ym.slice(5);return ym<R.M?m+"월":ym===R.M?m+"월"+(est.length?"(예상)":""):m+"월(예상)"});
  const rowM=(nm,a,tot)=>`<tr><td>${nm}</td>${a.map(v=>`<td class="n">${v==null?"":U(v,1)}</td>`).join("")}<td class="n"><b>${U(tot,1)}</b></td></tr>`;
- h+=`<div class="card"><div class="card-h"><div><h2>월간 누적 실적 (${UN()})</h2><div class="desc">수주 = 계약일이 속한 달 · 미수금·수주잔액 = 월말 잔액 (${mm}월은 ${MD(w.cutoff)} 기준) · 1~5월 등 지난 달은 진행매출월별을 한 번 올리면 고정</div></div><div class="acts"><button class="btn s p" onclick="pptImg('mon')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('mon')" title="데이터 칸만 복사 — PPT 표의 '수주' 행 1월 칸을 선택 후 붙여넣기">값만 복사</button></div></div>
+ h+=`<div class="card"><div class="card-h"><div><h2>월간 누적 실적 (${UN()})</h2><div class="desc">수주 = 계약일이 속한 달 · 미수금 = 그 달까지 발행한 계산서 중 ${MD(w.cutoff)} 현재 못 받은 금액 · 수주잔액 = 월말 잔액 (${mm}월은 ${MD(w.cutoff)} 기준) · 1~5월 등 지난 달은 진행매출월별을 한 번 올리면 고정</div></div><div class="acts"><button class="btn s p" onclick="pptImg('mon')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('mon')" title="데이터 칸만 복사 — PPT 표의 '수주' 행 1월 칸을 선택 후 붙여넣기">값만 복사</button></div></div>
  <div class="scroll"><table class="t" id="t8m"><thead><tr><th>구분</th>${lab.map(l=>`<th>${l}</th>`).join("")}<th>누적 총액</th></tr></thead><tbody>`+
- rowM("수주",R.mon.order,R.tot.order)+rowM("매출",R.mon.rev,R.tot.rev)+rowM("매출이익",R.mon.pl,R.tot.pl)+rowM("수금",R.mon.coll,R.tot.coll)+rowM("미수금",R.mon.ar,R.tot.ar)+rowM("수주 잔",R.mon.backlog,R.tot.backlog)+`</tbody></table></div></div>`;
+ rowM("수주",R.mon.order,R.tot.order)+rowM("매출",R.mon.rev,R.tot.rev)+rowM("매출이익",R.mon.pl,R.tot.pl)+rowM("수금",R.mon.coll,R.tot.coll)+
+ `<tr><td title="그 달까지 발행한 계산서 중 기준일 현재 아직 못 받은 금액 (나중에 입금되면 0). 칸을 누르면 어느 청구인지 표시">미수금</td>${R.mon.ar.map((v,i)=>`<td class="n${v?" click":""}" ${v?`onclick="showAR40('${R.cols[i]}')" title="눌러서 구성 보기"`:""}>${v==null?"":U(v,1)}</td>`).join("")}<td class="n"><b>${U(R.tot.ar,1)}</b></td></tr>`+
+ rowM("수주 잔",R.mon.backlog,R.tot.backlog)+`</tbody></table></div></div>`;
  // 9p
  const arRows=[];R.list.forEach(c=>c.bills.forEach(b=>{const rest=b.amt-(b.collected||0);if(b.date&&b.date<=w.cutoff&&rest>0)arRows.push({c,b,rest})}));
  h+=`<div class="card"><div class="card-h"><div><h2>RM / AM</h2><div class="desc">미수 채권은 채권 발행 데이터 기준 자동 · 활동 내역은 한 줄에 "MM/DD 내용"으로 입력하면 PPT 일자/내용 2열로 복사</div></div><div class="acts"><button class="btn s" onclick="copyTable('t9')">미수 표 복사</button></div></div>`+
@@ -1715,6 +1756,75 @@ function rWeekly(){
  notesHtml("notes9a","Risk Management",[["rmPrev","전주 활동",w.pm,w.pf],["rmCur","금주 예정",w.mon,w.fri]])+notesHtml("notes9b","Asset Management",[["amPrev","전주 활동",w.pm,w.pf],["amCur","금주 예정",w.mon,w.fri]])+`</div>`;
  h+=`<div class="card"><div class="row" style="justify-content:space-between"><div><b>주간 확정</b><div class="muted" style="font-size:12px">이번 주 숫자(KPI·현장별 누적매출·수금)를 저장해 두면 다음 주 보고에서 '전주' 값과 증감이 자동으로 나옵니다. 다시 누르면 덮어씁니다.</div></div><button class="btn p" id="snapBtn" onclick="snapshot()">${wk().snap?"다시 확정":"이번 주 확정"}</button></div></div>`;
  $("main").innerHTML=h}
+/* ---------- 실적관리 — 프로젝트별 월별 (2026-11-16) ----------
+ * 행 = 현장별 매출/매출원가/매출이익/수금액 + 기타(구분손익 전력·O&M 등) + 합계 · 열 = 계약금액 · 전년누적 · 당해 계 · 1~12월
+ * 구분손익(재무 배포)을 올린 달 = 재무 숫자(프로젝트 코드별 진행매출 + 기타 계정), 안 올린 달 = ERP 결산(확정)/전표 추정 */
+const SEGP=()=>{try{return EMB&&window.parent.SEG?window.parent.SEG:null}catch(e){return null}};
+const PFG=p=>s(p.pfGrp)||(s(p.kind)==="입찰"&&/발전/.test(s(p.client))?"공공 입찰":"민간");
+function pyCum(p,Y){const cl=(p.closings||[]).slice().sort((a,b)=>a.ym<b.ym?-1:1);const b=cl.filter(c=>c.ym<Y+"-01");
+ if(b.length){const c=b[b.length-1];return{rev:num(c.cum&&c.cum.rev),cost:num(c.cum&&c.cum.cost)}}
+ const f=cl.find(c=>c.ym.slice(0,4)===Y);return f&&f.prev?{rev:num(f.prev.rev),cost:num(f.prev.cost)}:{rev:0,cost:0}}
+function yrOf(c){const Y=c.M.slice(0,4),py=pyCum(c.p,Y);let collY=0,collPY=0;for(const e of c.events){if(!e.date||e.date>c.D)continue;if(e.date.slice(0,4)===Y)collY+=e.amt;else if(e.date<Y)collPY+=e.amt}return{Y,py,revY:yrRev(c),collY,collPY}}
+// 당해 누적 매출 = 월별 표와 같은 기준 (구분손익 올린 달 = 재무 진행매출, 나머지 달 = ERP 결산·추정)
+function yrRev(c){const G=SEGP(),Y=c.M.slice(0,4);let t=0;for(let i=1;i<=12;i++){const ym=Y+"-"+pad(i);if(ym>c.M)break;const g=G&&G.month(ym);if(g){const v=G.proj(ym,c.p.id);t+=v?v.rev:0}else{const r=c.map[ym];if(r)t+=r.rev}}return t}
+function segPick35(){const G=SEGP();if(!G)return;const i=document.createElement("input");i.type="file";i.multiple=true;i.accept=".xlsx,.xlsm,.xls";
+ i.onchange=()=>G.import(i.files).then(m=>{toast(m);render()},e=>alert("구분손익 업로드 실패: "+e.message));i.click()}
+function segLink35(code,id){const G=SEGP();if(!G)return;G.link(code,id);render()}
+function setGrp35(id,v){if(v==="__n"){v=prompt("새 구분 이름 (예: 민간, 공공 수의, 기타 입찰)");if(!v||!v.trim()){render();return}}const p=proj(id);if(!p)return;p.pfGrp=v.trim();save();render()}
+function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,cols=R.cols;
+ const segM=cols.map(ym=>ym<=M&&G?G.month(ym):null);const nSeg=segM.filter(Boolean).length;
+ const sum=a=>a.reduce((t,v)=>t+(v||0),0);
+ const rowsP=R.list.map(c=>{const y=yrOf(c);const m=cols.map((ym,i)=>{if(ym>M)return null;if(segM[i]){const v=G.proj(ym,c.p.id)||{rev:0,cost:0};return{rev:v.rev,cost:v.cost,k:"seg"}}const r=c.map[ym];return r?{rev:r.rev,cost:r.cost,k:r.st}:{rev:0,cost:0}});
+  return{c,y,m,coll:cols.map(ym=>ym>M?null:collAt(c,ym,true)),g:PFG(c.p)}});
+ const gs=[...new Set(rowsP.map(r=>r.g))].sort((a,b)=>(a==="공공 입찰"?0:1)-(b==="공공 입찰"?0:1));
+ const allG=[...new Set(["공공 입찰","민간",...DB.projects.map(PFG)])];
+ // 기타 · 미연결
+ const ord=["전력","O&M","용역","상품","제품","임대"],oi=c=>(ord.indexOf(c)+1)||99;
+ const cats=[...new Set(segM.filter(Boolean).flatMap(g=>Object.keys(g.cats).filter(k=>Math.abs(g.cats[k].rev)>=1||Math.abs(g.cats[k].cost)>=1)))].sort((a,b)=>oi(a)-oi(b));
+ const eLab="기타 ("+(cats.length?cats.join(" + "):"전력 + O&M")+")";
+ const eR=segM.map((g,i)=>cols[i]>M?null:g?g.etcRev:null),eC=segM.map((g,i)=>cols[i]>M?null:g?g.etcCost:null);
+ const uR=segM.map((g,i)=>g?g.siRev-rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i].rev:0),0):null),uC=segM.map((g,i)=>g?g.siCost-rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i].cost:0),0):null);
+ const hasU=uR.some(v=>v&&Math.abs(v)>=1)||uC.some(v=>v&&Math.abs(v)>=1);
+ const ids=R.list.map(c=>c.p.id),unl=G&&nSeg?G.unlinked(cols.filter((ym,i)=>segM[i]),ids):[];
+ // 그리기
+ const cell=(v,t)=>`<td class="n"${t?` title="${esc(t)}"`:""}>${v==null?"":U(v,1)}</td>`;
+ const line=(lead,lab,k,py,a,cls,tips)=>`<tr class="${cls||""}">${lead}<td class="c it">${lab}</td>${cell(k)}${cell(py)}<td class="n yt">${U(sum(a),1)}</td>${a.map((v,i)=>cell(v,tips&&tips[i])).join("")}</tr>`;
+ const minus=(a,b)=>a.map((v,i)=>v==null&&b[i]==null?null:(v||0)-(b[i]||0));
+ const head=`<tr><th colspan="4">구분</th><th>계약금액<br>(VAT별도)</th><th>전년누적</th><th>${YY}년계</th>${cols.map((ym,i)=>`<th${segM[i]?' class="sg" title="구분손익 반영 — '+esc(segM[i].file||"")+'"':""}>${+ym.slice(5)}월${ym===M&&est&&!segM[i]?"<br><span class=\"hint\">(추정)</span>":ym>M?"<br><span class=\"hint\">-</span>":""}</th>`).join("")}</tr>`;
+ let body="";
+ gs.forEach(g=>{const L=rowsP.filter(r=>r.g===g);L.forEach((r,j)=>{const c=r.c,p=c.p;
+  const gc=j===0?`<td class="g" rowspan="${L.length*4}">${esc(g)}</td>`:"";
+  const lk=G&&UI.pfGrpEd?G.linked(p.id):[];
+  const ed=UI.pfGrpEd?`<div class="ged"><select onchange="setGrp35('${p.id}',this.value)">${allG.map(x=>`<option ${x===r.g?"selected":""}>${esc(x)}</option>`).join("")}<option value="__n">＋ 새 구분</option></select>${lk.map(cd=>`<div class="hint">구분손익 ${esc(cd)} <a href="javascript:void 0" onclick="segLink35('${esc(cd)}','')" title="연결 해제">✕</a></div>`).join("")}</div>`:"";
+  const nm=`<td class="cl" rowspan="4">${esc(p.client)}</td><td class="nm" rowspan="4" data-copy="${esc(NM(p))}">${esc(NM(p))}${ed}</td>`;
+  const tip=r.m.map(x=>x?x.k==="seg"?"구분손익(재무) 기준":x.k==="추정"?"ERP 미마감 — 전표 기준 추정":x.k==="수기"?"수기 입력값":"ERP 결산":"");
+  const rv=r.m.map(x=>x&&x.rev),cs=r.m.map(x=>x&&x.cost),pl=r.m.map(x=>x&&x.rev-x.cost);
+  body+=line(gc+nm,"매출",c.contract,r.y.py.rev,rv,"r1",tip)+line("","매출원가",c.budget,r.y.py.cost,cs,"",tip)+line("","매출이익",c.contract-c.budget,r.y.py.rev-r.y.py.cost,pl)+line("","수금액",c.collCum,r.y.collPY,r.coll,"cl4")})});
+ // 기타 블록
+ const catRow=(k,f)=>segM.map((g,i)=>cols[i]>M||!g?null:(g.cats[k]||{})[f]||0);
+ const etcTip=f=>segM.map(g=>g?Object.keys(g.cats).sort((a,b)=>oi(a)-oi(b)).map(k=>`${k} ${U(g.cats[k][f])}`).join(" · "):"구분손익 미반영");
+ const eRows=[["매출",eR,"r1",etcTip("rev")]];if(UI.pfEtc)cats.forEach(k=>eRows.push(["ㄴ "+k,catRow(k,"rev"),"sb"]));
+ eRows.push(["매출원가",eC,"",etcTip("cost")]);if(UI.pfEtc)cats.forEach(k=>eRows.push(["ㄴ "+k,catRow(k,"cost"),"sb"]));eRows.push(["매출이익",minus(eR,eC),""]);
+ body+=eRows.map(([lab,a,cls,tp],i)=>line(i?"":`<td class="g" rowspan="${eRows.length}">기타</td><td class="cl" rowspan="${eRows.length}">구분손익<div class="hint">재무 배포</div></td><td class="nm" rowspan="${eRows.length}" data-copy="${esc(eLab)}">${esc(eLab)}${G?`<div><button class="btn s" onclick="UI.pfEtc=!UI.pfEtc;render()">${UI.pfEtc?"계정별 접기":"계정별 보기"}</button></div>`:""}</td>`,lab,null,null,a,cls,tp)).join("");
+ if(hasU)body+=[["매출",uR,"r1"],["매출원가",uC,""],["매출이익",minus(uR,uC),""]].map(([lab,a,cls],i)=>line(i?"":`<td class="g" rowspan="3">미연결</td><td class="cl" rowspan="3">구분손익</td><td class="nm" rowspan="3">진행매출 중<br>현장 미연결</td>`,lab,null,null,a,cls)).join("");
+ // 합계
+ const tot=f=>cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.m[i]?r.m[i][f]:0),0)+((f==="rev"?eR:eC)[i]||0)+((f==="rev"?uR:uC)[i]||0));
+ const tR=tot("rev"),tC=tot("cost"),tCo=cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.coll[i]||0),0));
+ const T=k=>rowsP.reduce((t,r)=>t+k(r),0);
+ body+=line(`<td class="g" rowspan="4">합계</td><td class="cl" rowspan="4">EPC사업부<br>(국내)</td><td class="nm" rowspan="4">전체</td>`,"매출",T(r=>r.c.contract),T(r=>r.y.py.rev),tR,"r1 tt")+line("","매출원가",T(r=>r.c.budget),T(r=>r.y.py.cost),tC,"tt")+line("","매출이익",T(r=>r.c.contract-r.c.budget),T(r=>r.y.py.rev-r.y.py.cost),minus(tR,tC),"tt")+line("","수금액",T(r=>r.c.collCum),T(r=>r.y.collPY),tCo,"tt cl4");
+ // 검증 · 연결
+ const chk=segM.map((g,i)=>g&&g.chk&&g.chk.rev!=null&&Math.abs(g.chk.rev-tR[i])>=1?`${+cols[i].slice(5)}월 표 합계 ${U(tR[i])} ≠ 파일 EPC사업부(국내) ${U(g.chk.rev)}`:"").filter(Boolean);
+ const segTxt=G?(nSeg?`구분손익 반영 ${cols.filter((ym,i)=>segM[i]).map(ym=>+ym.slice(5)+"월").join("·")} (헤더 파란색) — 그 달은 재무 숫자 그대로 · 나머지 달은 ERP 결산${est?"·추정":""}`:"구분손익 미반영 — [구분손익 업로드]로 재무 배포 엑셀을 올리면 기타(전력·O&M 등)가 채워짐"):"";
+ const unlH=unl.length?`<div class="hint warn" style="margin-top:6px">구분손익 진행매출 중 현장과 연결 안 된 프로젝트 코드 ${unl.length}건 — 현장을 고르면 그 현장 행으로 들어감 (한 번만 지정): ${unl.map(u=>`<span class="segu"><b>${esc(u.code)}</b> ${esc(u.name)} · ${U(u.rev)}${UN()} <select onchange="segLink35('${esc(u.code)}',this.value)"><option value="">현장 선택</option>${R.list.map(c=>`<option value="${c.p.id}">${esc(NM(c.p))}</option>`).join("")}</select></span>`).join("")}</div>`:"";
+ return`<style>#t8y td{padding:5px 8px}#t8y td.g{text-align:center;font-weight:700;background:var(--th);border-right:1px solid var(--line);min-width:64px}
+#t8y td.cl,#t8y td.nm{text-align:center;white-space:normal;min-width:84px;max-width:150px;word-break:keep-all;border-right:1px solid var(--line2);font-weight:600}
+#t8y td.it{background:var(--th);color:var(--sub);border-right:1px solid var(--line2);min-width:58px}#t8y tr.r1 td{border-top:1px solid var(--line)}
+#t8y td.yt{font-weight:700;border-left:1px solid var(--line2);border-right:1px solid var(--line2)}#t8y tr.sb td{color:var(--muted);font-size:12px}#t8y tr.sb td.it{font-weight:400;text-align:left;padding-left:14px}
+#t8y tr.tt td{font-weight:700;background:var(--th)}#t8y th.sg{color:var(--brand);box-shadow:inset 0 -2px 0 var(--brand)}#t8y .ged{margin-top:4px;font-weight:400}#t8y .ged select{font-size:12px;max-width:130px}
+.segu{display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0}.segu select{font-size:12px}</style>
+ <div class="card"><div class="card-h"><div><h2>실적관리 — 프로젝트별 월별 (${UN()})</h2><div class="desc">${Y}년 1~12월 · 계약금액 열: 매출=계약금액 · 매출원가=실행예산 · 매출이익=목표이익 · 수금액=누적 수금(VAT 포함) · ${segTxt}</div></div><div class="acts">${G?`<button class="btn s p" onclick="segPick35()" title="재무 배포 '(SE) ${YY}년 구분손익_MM월' 엑셀 — 여러 달 한 번에 선택 가능, 같은 달은 새 파일로 덮어씀">구분손익 업로드</button>`:""}<button class="btn s" onclick="UI.pfGrpEd=!UI.pfGrpEd;render()">${UI.pfGrpEd?"구분 편집 닫기":"구분 편집"}</button><button class="btn s" onclick="copyTable('t8y')" title="엑셀·PPT 표에 붙여넣기">표 복사</button></div></div>
+ ${chk.length?`<div class="hint warn">${chk.map(esc).join(" · ")}</div>`:""}${unlH}
+ <div class="scroll"><table class="t" id="t8y"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`}
 function notesHtml(id,title,parts){const n=wk().notes||{};return`<div class="notes" id="${id}">${parts.map(([k,l,a,b])=>`<div><h4>${title} · ${l} <span>${(+a.slice(5,7))}월 ${(+a.slice(8))}일 ~ ${(+b.slice(5,7))}월 ${(+b.slice(8))}일</span><button class="btn s" onclick="copyNotes('${k}')">복사</button></h4><textarea rows="4" placeholder="${MD(a)} 내용을 입력" oninput="wk().notes.${k}=this.value;save()">${esc(n[k]||"")}</textarea></div>`).join("")}</div>`}
 function setPF(pid,k,v,noWeek){const p=proj(pid);p[k]=v;if(!noWeek)p.fieldWeek=WI().mon;save();render()}
 function snapshot(){const w=WI(),R=buildReport(DB.projects,w.cutoff,opt());const rows={};R.list.forEach(c=>rows[c.p.id]={revCum:c.revCum,collCum:c.collCum,ar:c.ar,backlog:c.backlog});
@@ -1726,6 +1836,18 @@ function showBasis(pid){const p=proj(pid),c=calcProject(p,D(),opt());
  if(c.cur&&c.cur.st==="추정"){const vs=(p.vouchers||[]).filter(v=>(!v.unappr||DB.settings.unappr)&&v.ym===c.M&&v.date<=c.D).sort((a,b)=>b.amt-a.amt);
   h+=`<div class="sec-t">${c.M} 전표 (${c.D}까지, 금액순) — ${vs.length}건 · ${W(vs.reduce((t,v)=>t+(v.exclude?0:v.amt),0))}원</div><div class="scroll"><table class="t"><thead><tr><th>전표번호</th><th>계정</th><th>적요</th><th>금액</th><th>태그</th><th></th></tr></thead><tbody>${vs.slice(0,40).map(v=>`<tr class="${v.exclude?"ex":""}"><td>${v.no}</td><td>${esc(v.acc)}</td><td class="w">${esc(v.memo)}${v.pay?`<small class="pinfo">${esc(v.pay.vendor)}${v.pay.sub?" · "+esc(v.pay.sub):""}${v.pay.round?" · "+esc(v.pay.round)+"회차":""}</small>`:""}${v.src==="지급결의"?` <span class="badge b-warn" title="ERP 실적 전표에 아직 없어 지급결의로 임시 반영 (ERP 업로드 시 자동 대체)">지급결의</span>`:""}</td><td class="n">${W(v.amt)}</td><td>${esc(v.tag)}</td><td>${v.unappr?'<span class="badge b-warn">미승인</span>':""}</td></tr>`).join("")}</tbody></table></div>
   <div class="hint" style="margin-top:10px">추정월 원가 = 기준일까지 전표 누계 − 직전 마감 누계원가. 마감 후 과거 일자로 들어온 전표도 이 달에 포함됩니다 (ERP도 다음 마감월로 흡수).</div>`}
+ $("modal").innerHTML=h;$("mb").classList.add("on")}
+// v40: 월간 누적 실적 '미수금' 칸 구성 — 그 달 말일(이번 달은 기준일)까지 발행했는데 그때까지 못 받은 청구
+function showAR40(ym){const w=WI(),R=buildReport(rsPS35(),w.cutoff,opt());const rows=[];let orphan=0,tot=0;
+ const cur=ym===R.M;R.list.forEach(c=>{const L=limOf(c,ym);const ar=cur?issuedAt(c,ym)-collAt(c,ym,false):arNow40(c,ym);if(!ar)return;tot+=ar;let sumB=0;
+  c.bills.forEach(b=>{if(!b.date||b.date>L)return;const paid=(b.events||[]).filter(e=>e.date<=c.D).reduce((t,e)=>t+e.amt,0);const rest=b.amt-paid;if(rest>0){sumB+=rest;
+   const nx=(b.events||[]).filter(e=>e.date>c.D).map(e=>MD(e.date)+(e.src==="수금내역"?"":" ("+e.src+")"));rows.push({p:c.p,b,rest,L,nx})}});
+  orphan+=ar-sumB});
+ let h=`<div class="card-h"><div><h2>${ym.slice(0,4)}년 ${+ym.slice(5)}월 미수금 구성 — ${U(tot,1)||"0"} ${UN()}</h2><div class="desc">${MD(limOf(R.list[0]||{M:R.M,D:R.D},ym))}까지 발행한 계산서(ERP 채권) 중 기준일(${MD(R.D)}) 현재 아직 못 받은 금액 · 나중에 입금되면 그 달 칸도 0</div></div><div class="acts"><button class="btn s" onclick="closeModal()">닫기</button></div></div>
+ <div class="scroll"><table class="t"><thead><tr><th>현장</th><th>청구(비고)</th><th>발행일</th><th>발행액</th><th>미수 (기준일 현재)</th><th>비고</th></tr></thead><tbody>`+
+ (rows.length?rows.map(r=>`<tr><td>${esc(NM(r.p))}</td><td class="w">${esc(r.b.note||"")}</td><td class="c">${r.b.date}</td><td class="n">${W(r.b.amt)}</td><td class="n"><b>${W(r.rest)}</b></td><td class="c">${r.nx.length?"수금 예정 "+esc(r.nx.join(", ")):"수금 전"}</td></tr>`).join(""):`<tr><td colspan="6" class="muted">해당 청구 없음</td></tr>`)+
+ (Math.abs(orphan)>=1?`<tr><td colspan="4" class="muted">발행 건과 짝이 안 맞는 수금 등 조정</td><td class="n">${W(orphan)}</td><td></td></tr>`:"")+`</tbody></table></div>
+ <div class="hint" style="margin-top:10px">수금일은 ERP 수금내역 기준 (화면에서 직접 넣은 수금일 포함). 발행일·수금일이 틀렸으면 현장 › 기성·수금·지급 또는 ERP 업로드 자료를 수정</div>`;
  $("modal").innerHTML=h;$("mb").classList.add("on")}
 function closeModal(){$("mb").classList.remove("on");UI.preview=null}
 
@@ -2455,12 +2577,12 @@ function copyTable(id){const t=$(id);if(!t)return;
 /* PPT 주간보고 표 규격 (20261106 주간보고 기준: 열 너비 pt, 행 높이 pt) */
 const PPT_SPEC={
  site:{title:"프로젝트 진행현황 (현장관리)",cols:[21,53,115,53,53,53,53,53,53,53,53,53,107],head:[[["번호"],["고객/발주처"],["현장명"],["PV용량"],["설치방식"],["모듈\n제조사"],["인버터\n제조사"],["계획공정률\n(%)"],["실적공정률\n(%)"],["목표 GP\n(%)"],["목표준공일"],["RAG등급"],["주요 현안/Risk"]]],hh:[28.4],rh:19.8,minRows:10},
- perf:{title:"실적관리 (계약 후 매출발생 시작 현장 기준)",cols:[21,53,115,53,53,56,51,53,53,53,53,53,53,53],head:[[["번호",1,2],["고객/발주처",1,2],["현장명",1,2],["계약금액\n(억원)",1,2],["기\n매출총액",1,2],["매출",4,1],null,null,null,["수금",4,1],null,null,null,["기타",1,2]],[null,null,null,null,null,["계산서발행일"],["매출액"],["누적\n매출액"],["수주 잔액"],["수금일"],["수금액"],["누적\n수금액"],["미수금"],null]],hh:[16,26],rh:19.8,minRows:9,sum:true},
+ perf:{title:"실적관리 (계약 후 매출발생 시작 현장 기준)",cols:[21,53,115,53,53,56,51,53,53,53,53,53,53,53],head:[[["번호",1,2],["고객/발주처",1,2],["현장명",1,2],["계약금액\n(억원)",1,2],["전년\n누적",1,2],["매출",4,1],null,null,null,["수금",4,1],null,null,null,["기타",1,2]],[null,null,null,null,null,["계산서발행일"],["매출액"],["당해\n누적"],["수주 잔액"],["수금일"],["수금액"],["당해\n누적"],["미수금"],null]],hh:[16,26],rh:19.8,minRows:9,sum:true},
  mon:{title:"월간 누적 실적",cols:[49,56,56,56,56,56,56,56,56,56,56,56,56,56],hh:[19.3],rh:21.6,minRows:6}};
 function pptData(kind){const w=WI(),R=buildReport(rsPS35(),w.cutoff,opt());const est=R.list.some(c=>c.st==="추정");const r1=v=>v?U(v,1):"",r0=v=>v?U(v):"";
  if(kind==="site")return{rows:R.list.map((c,i)=>{const p=c.p;return[i+1,s(p.client),NM(p),s(capF(p.capacity)),s(p.install),s(p.module),s(p.inverter),s(p.pmPlan),P(c.salesRate),P(c.gp),fmtTarget(p.targetDate),s(p.rag),s(p.issue)]})};
- if(kind==="perf"){const S={c:0,pv:0,cu:0,cm:0,bk:0,mc:0,cc:0,ar:0};const rows=R.list.map((c,i)=>{const p=c.p;S.c+=c.contract;S.pv+=c.revPrev;S.cu+=c.revCur;S.cm+=c.revCum;S.bk+=c.backlog;S.mc+=c.monthColl;S.cc+=c.collCum;S.ar+=c.ar;
-   return[i+1,s(p.client),NM(p),U(c.contract),r1(c.revPrev),c.issueDates.map(MD).join(", "),r1(c.revCur),r1(c.revCum),U(c.backlog),c.collDates.map(MD).join(", "),r1(c.monthColl),r1(c.collCum),r1(c.ar),s(p.memo)]});
+ if(kind==="perf"){const S={c:0,pv:0,cu:0,cm:0,bk:0,mc:0,cc:0,ar:0};const rows=R.list.map((c,i)=>{const p=c.p,y=yrOf(c);S.c+=c.contract;S.pv+=y.py.rev;S.cu+=c.revCur;S.cm+=y.revY;S.bk+=c.backlog;S.mc+=c.monthColl;S.cc+=y.collY;S.ar+=c.ar;
+   return[i+1,s(p.client),NM(p),U(c.contract),r1(y.py.rev),c.issueDates.map(MD).join(", "),r1(c.revCur),r1(y.revY),U(c.backlog),c.collDates.map(MD).join(", "),r1(c.monthColl),r1(y.collY),r1(c.ar),s(p.memo)]});
   return{rows,sum:["합계","","",U(S.c),U(S.pv,1),"",U(S.cu,1),U(S.cm,1),U(S.bk),"",U(S.mc,1),U(S.cc,1),U(S.ar,1),""]}}
  const lab=R.cols.map(ym=>{const m=+ym.slice(5);return ym<R.M?m+"월":ym===R.M?m+"월"+(est?"(예상)":""):m+"월(예상)"});
  const rowM=(nm,a,tot)=>[nm,...a.map(v=>v==null?"":U(v,1)),U(tot,1)];
@@ -2626,7 +2748,7 @@ const LIST_META=[["types","현장유형 (템플릿 연동)"],["sources","수주�
 function L(k){return(settings.lists&&settings.lists[k])||DEFAULT_LISTS[k]}
 function typeLabel(c){const t=L("types").find(x=>x.code===c);return t?t.label:c}
 function opts(arr,sel){return arr.map(v=>`<option value="${esc(v)}" ${v===sel?"selected":""}>${esc(v)}</option>`).join("")}
-function ensureSettings(){settings=Object.assign({theme:"light",view:"card",warrantyYears:3,urgentDays:7,title:"EPC 사업관리 대시보드",author:"",kpiSpi:0.9,kpiCost:99,kpiCostWarn:97,kpiPunch:5,cpiWarn:1.0,contWarn:80,billSubDay:20,billSubmitDay:25,billConfirmDay:14,billApprDays:"3~5",warrantyBase:"COD"},settings||{});settings.lists=Object.assign(JSON.parse(JSON.stringify(DEFAULT_LISTS)),settings.lists||{});if(!settings.lists.types.length)settings.lists.types=JSON.parse(JSON.stringify(DEFAULT_LISTS.types))}
+function ensureSettings(){settings=Object.assign({theme:"light",view:"card",warrantyYears:3,urgentDays:7,title:"SE EPC 사업부 관리 시스템",author:"",kpiSpi:0.9,kpiCost:99,kpiCostWarn:97,kpiPunch:5,cpiWarn:1.0,contWarn:80,billSubDay:20,billSubmitDay:25,billConfirmDay:14,billApprDays:"3~5",warrantyBase:"COD"},settings||{});settings.lists=Object.assign(JSON.parse(JSON.stringify(DEFAULT_LISTS)),settings.lists||{});if(!settings.lists.types.length)settings.lists.types=JSON.parse(JSON.stringify(DEFAULT_LISTS.types))}
 const COLORS=[{bg:"#fff3c4",t:"#7a5a00",db:"#3a2f08",dt:"#fbd96e"},{bg:"#dbe8ff",t:"#1d4f9c",db:"#0d2a4a",dt:"#7eb6ff"},{bg:"#d8f3dc",t:"#1b6b36",db:"#1a3a1a",dt:"#7fdb7f"},{bg:"#ead9f5",t:"#6a2f8f",db:"#3a1a4a",dt:"#d986f0"},{bg:"#ffdce6",t:"#9c2550",db:"#4a1a2f",dt:"#f586a8"},{bg:"#d4f1f1",t:"#136b6b",db:"#0d3a3a",dt:"#7fdbdb"},{bg:"#ffe3cc",t:"#9a4a00",db:"#3a2008",dt:"#f5a866"},{bg:"#ffd9d6",t:"#9b1f1f",db:"#3a1010",dt:"#f57f7f"},{bg:"#e3e5ea",t:"#444",db:"#2a2a2a",dt:"#aaaaaa"},{bg:"#e6f2cc",t:"#4c6b00",db:"#2a3a0d",dt:"#b8db7f"}];
 
 const TYPES=null;const SCOPES=null;
@@ -2793,7 +2915,7 @@ function seed(){
  save();
 }
 // ===================== 테마 / 탭 =====================
-function applyTheme(){const t=settings.title||"EPC 사업관리 대시보드";$("appTitle").textContent=t;$("sbLogo").textContent=(t.trim()[0]||"E").toUpperCase();document.title=t;document.documentElement.setAttribute("data-theme",settings.theme);$("themeBtn").innerHTML=settings.theme==="dark"?'<span class="ic">☀</span><span class="lb">라이트 모드</span>':'<span class="ic">☾</span><span class="lb">다크 모드</span>';$("tbTheme").textContent=settings.theme==="dark"?"☀":"☾";applyCollapse();$("tbInfo").textContent="브라우저 자동 저장 · "+new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})}
+function applyTheme(){const t=settings.title||"SE EPC 사업부 관리 시스템";$("appTitle").textContent=t;document.title=t;document.documentElement.setAttribute("data-theme",settings.theme);$("themeBtn").innerHTML=settings.theme==="dark"?'<span class="ic">☀</span><span class="lb">라이트 모드</span>':'<span class="ic">☾</span><span class="lb">다크 모드</span>';$("tbTheme").textContent=settings.theme==="dark"?"☀":"☾";applyCollapse();$("tbInfo").textContent="브라우저 자동 저장 · "+new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})}
 function toggleSidebar(o){$("sidebar").classList.toggle("open",o);$("sbBackdrop").classList.toggle("open",o)}
 function toggleSec(h){const c=h.parentElement;c.classList.toggle("closed");settings.secClosed=settings.secClosed||{};settings.secClosed[c.dataset.c]=c.classList.contains("closed");save()}
 function applySecs(){const m=settings.secClosed||{};document.querySelectorAll(".collapsible[data-c]").forEach(c=>c.classList.toggle("closed",!!m[c.dataset.c]))}
@@ -4370,7 +4492,7 @@ const _cardM=cardHtml;cardHtml=function(p){let h=_cardM(p);const st=stagesFor(p)
  h=h.replace(/\n <div class="stages">[\s\S]*?<\/div>/,"");h=h.replace('<div class="meta">진척 ',`<div class="meta"><b style="color:var(--text)">${stageName(p.stage)}</b> <span class="hint">(${ci+1}/${st.length}단계)</span> · 진척 `);return h};
 // ---------- 초기화: 요청사항 이관 · 상단 버튼 · 주간보고 전환 바 ----------
 function mergeInit(){const n=migrateReqsToTasks();if(n){_saveDash();setTimeout(()=>toast(`요청사항 ${n}건을 Task로 옮김 (분류 '요청사항')`),800)}
- const b=document.querySelector('.tb-right button[onclick="switchTab(\'report\')"]');if(b){b.textContent="▤ 주간보고";b.setAttribute("onclick","switchTab('erp:weekly')")}
+ const b=document.querySelector('.tb-right button[onclick="switchTab(\'report\')"]');if(b){b.innerHTML='▤<span class="tb-lb"> 주간보고</span>';b.setAttribute("onclick","switchTab('erp:weekly')")}
  const r=document.querySelector('.stat [id="hReq"]');
  const te=$("tab-report")||$("tab-erp");if(te&&!$("wkSeg"))te.insertAdjacentHTML("beforebegin",'<div id="wkSeg" class="view-seg"><button class="chip" data-s="erp" onclick="wkSegGo(\'erp\')">실적·현황 (실적관리)</button><button class="chip" data-s="pm" onclick="wkSegGo(\'pm\')">이슈·RM/AM·계획 (사업관리)</button></div>')}
 
@@ -5071,7 +5193,12 @@ function v17Init(){try{if(typeof TAB_TITLE==="object")TAB_TITLE.permit=["인허�
 .pf-t{width:100%;border-collapse:collapse;font-size:12.5px}.pf-t th,.pf-t td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 .pf-t th{background:var(--bg-elev2);color:var(--text-dim);font-weight:600;text-align:center;position:sticky;top:0}.pf-t td.n{text-align:right;font-variant-numeric:tabular-nums}
 .pf-t tr.tot td{font-weight:700;background:var(--bg-elev2)}.pf-t tr.grp td{background:var(--bg-elev2);font-weight:600}.pf-t td.neg{color:var(--danger)}
-.pf-t input.pf-in{width:68px;text-align:right;padding:2px 4px;font-size:12px}.pf-t tr.clk:hover td{background:var(--bg-elev2);cursor:pointer}
+.pf-t input.pf-in{width:68px;text-align:right;padding:2px 4px;font-size:12px}
+.seg-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}.seg-bar .hint{margin:0 2px 0 6px}
+.seg-ch{display:inline-block;min-width:34px;text-align:center;padding:2px 6px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--text-dim);opacity:.6}
+.seg-ch.on{opacity:1;color:var(--accent);border-color:var(--accent);font-weight:600;cursor:pointer}.seg-ch.on:hover{background:var(--bg-elev2)}
+.pf-t tr.sub td{border-bottom-style:dashed}
+.pf-t tr.clk:hover td{background:var(--bg-elev2);cursor:pointer}
 .pf-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 @media(max-width:1100px){.pf-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-row{grid-template-columns:minmax(0,1fr)}}
 .sc-t{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}.sc-t th,.sc-t td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left}.sc-t th{color:var(--text-dim);font-weight:600;background:var(--bg-elev2)}.sc-t td.n{text-align:right}
@@ -5153,7 +5280,7 @@ function erpSegPaint(sub){let s=$("erpSeg");const te=$("tab-erp");if(!s&&te){s=d
 let pfY=null,pfSub="month";
 function pfPS(){return ERPDB?ERPDB.projects.filter(e=>e.show!==false&&!e.dashSkip):[]}
 function pfYears(){const s=new Set();pfPS().forEach(e=>(e.closings||[]).forEach(c=>s.add(String(c.ym).slice(0,4))));s.add(todayStr().slice(0,4));return[...s].sort()}
-function pfLastYm(){let m="";pfPS().forEach(e=>(e.closings||[]).forEach(c=>{if(c.ym>m)m=c.ym}));return m}
+function pfLastYm(){let m="";pfPS().forEach(e=>(e.closings||[]).forEach(c=>{if(c.ym>m)m=c.ym}));try{Object.keys(((ERPDB||{}).settings||{}).segPL||{}).forEach(k=>{if(k>m)m=k})}catch(e){}return m}
 function pfCum(e,ym){const l=(e.closings||[]).filter(c=>c.ym<=ym).sort((a,b)=>a.ym.localeCompare(b.ym));const c=l[l.length-1];return c?{rev:+(c.cum&&c.cum.rev)||0,cost:+(c.cum&&c.cum.cost)||0,rate:+(c.cum&&c.cum.rate)||0}:{rev:0,cost:0,rate:0}}
 function pfMon(e,ym){const c=(e.closings||[]).find(x=>x.ym===ym);return c?{rev:+(c.cur&&c.cur.rev)||0,cost:+(c.cur&&c.cur.cost)||0}:{rev:0,cost:0}}
 function pfPlan(Y){settings.perfPlan=settings.perfPlan||{};return settings.perfPlan[Y]=settings.perfPlan[Y]||{}}
@@ -5173,7 +5300,7 @@ function pfAlerts(R){const A=[];const t=todayStr();R.forEach(r=>{const n=pfNm(r.
  if(r.C&&r.B&&r.exec>95)A.push({r:1,tag:"실행률",t:`${n} — 실행률 ${r.exec}% (이익률 ${r.gpr}%)`,go:pfGo(r.e)});
  if(r.C&&!r.B)A.push({r:0,tag:"예산",t:`${n} — 실행예산 미입력`,go:pfGo(r.e)});
  (r.e.bills||[]).forEach(b=>{const bal=Number(b.amt||0)-Number(b.collected||0);if(bal>0&&b.date&&-daysUntil(b.date)>=30)A.push({r:1,tag:"미수",t:`${n} — ${b.note||b.date} 미수 ${e8(bal)}억 (발행 후 ${-daysUntil(b.date)}일)`,go:"switchTab('erp:fund')"})})});return A}
-function pfMonthChart(Y,R){const P=pfPlan(Y);const last=pfLastYm();const D=Array.from({length:12},(_,i)=>{const mm=String(i+1).padStart(2,"0"),ym=`${Y}-${mm}`;const a=R.reduce((s,r)=>s+r.months[i].rev,0);return{i,mm,a,t:(P[mm]||{}).rev||0,fut:ym>last}});
+function pfMonthChart(Y,R){const P=pfPlan(Y);const last=pfLastYm();const AM=pfActMonths(Y);const D=Array.from({length:12},(_,i)=>{const mm=String(i+1).padStart(2,"0"),ym=`${Y}-${mm}`;const a=AM[i].rev;return{i,mm,a,t:(P[mm]||{}).rev||0,fut:ym>last}});
  const mx=Math.max(1,...D.map(d=>Math.max(d.a,d.t)))*1.12;const W=720,H=230,l=44,b=24,top=10,cw=(W-l-8)/12;const y=v=>top+(H-top-b)*(1-v/mx);
  const ticks=[0,.25,.5,.75,1].map(f=>mx/1.12*f);const tp=D.filter(d=>d.t).map(d=>`${l+cw*d.i+cw*.15},${y(d.t)} ${l+cw*d.i+cw*.85},${y(d.t)}`);
  return`<svg class="pf-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${Y}년 월별 매출 목표와 실적">${ticks.map(v=>`<line class="gl" x1="${l}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}"/><text x="${l-6}" y="${y(v)+4}" text-anchor="end">${(v/1e8).toFixed(v/1e8<10?1:0)}</text>`).join("")}
@@ -5181,7 +5308,7 @@ function pfMonthChart(Y,R){const P=pfPlan(Y);const last=pfLastYm();const D=Array
  ${tp.map(s=>`<polyline class="tgt" points="${s}"/>`).join("")}
  ${D.map(d=>`<rect class="hit" x="${l+cw*d.i}" y="${top}" width="${cw}" height="${H-top-b}" data-tt="${Y}년 ${d.i+1}월&#10;실적 매출 ${e8(d.a)}억&#10;목표 매출 ${d.t?e8(d.t)+"억":"미입력"}${d.t?`&#10;달성률 ${pc(d.a,d.t)}%`:""}"></rect>`).join("")}<text x="${l-6}" y="${top-1}" text-anchor="end">억원</text></svg>`}
 function pfSummary(Y){const R=pfAll(Y);const P=pfPlan(Y);const last=pfLastYm();const lm=last&&last.startsWith(Y)?Number(last.slice(5,7)):12;
- const ytd=R.reduce((s,r)=>({rev:s.rev+r.yr.rev,cost:s.cost+r.yr.cost}),{rev:0,cost:0});const tY=Object.entries(P).filter(([mm])=>Number(mm)<=lm).reduce((s,[,v])=>s+(v.rev||0),0);const tAll=Object.values(P).reduce((s,v)=>s+(v.rev||0),0);
+ const ytd=pfActMonths(Y).reduce((s,a)=>({rev:s.rev+a.rev,cost:s.cost+a.cost}),{rev:0,cost:0});const tY=Object.entries(P).filter(([mm])=>Number(mm)<=lm).reduce((s,[,v])=>s+(v.rev||0),0);const tAll=Object.values(P).reduce((s,v)=>s+(v.rev||0),0);
  const bl=R.reduce((s,r)=>s+Math.max(0,r.backlog),0),ar=R.reduce((s,r)=>s+r.ar,0),cash=R.reduce((s,r)=>s+(r.coll-r.paid),0);const A=pfAlerts(R);
  const kpi=`<div class="pf-kpi"><div class="k" onclick="pfSub='month';switchTab('perfx')"><div class="l">${Y}년 매출 실적 (~${lm}월)</div><div class="v">${e8(ytd.rev)}억</div><div class="s">${tY?`목표 ${e8(tY)}억 대비 <b>${pc(ytd.rev,tY)}%</b>`:"월별 목표 미입력 → 실적 분석에서 입력"}${tAll?` · 연간 목표 ${e8(tAll)}억`:""}</div></div>
  <div class="k" onclick="pfSub='month';switchTab('perfx')"><div class="l">매출이익 (${Y}년)</div><div class="v">${e8(ytd.rev-ytd.cost)}억</div><div class="s">이익률 <b>${ytd.rev?pc(ytd.rev-ytd.cost,ytd.rev):"-"}%</b> · 원가 ${e8(ytd.cost)}억</div></div>
@@ -5192,32 +5319,37 @@ function pfSummary(Y){const R=pfAll(Y);const P=pfPlan(Y);const last=pfLastYm();c
  const bul=rk.map(r=>{const w=r.costRate!=null&&r.prog!=null&&r.costRate>r.prog+5;return`<div class="pf-bul ${w?"warn":""}" onclick="${pfGo(r.e)}" data-tt="${esc(pfNm(r.e))}&#10;진행률 ${Math.round(r.prog*10)/10}% (매출 기준)&#10;원가 집행률 ${r.costRate??"-"}% (실행예산 대비)"><span class="nm">${esc(pfNm(r.e))}</span><span class="tr"><i style="width:${Math.min(100,r.prog)}%"></i>${r.costRate!=null?`<b style="left:calc(${Math.min(100,r.costRate)}% - 1px)"></b>`:""}</span><span class="vv">${Math.round(r.prog)}% / ${r.costRate??"-"}%</span></div>`}).join("");
  const contrib=R.filter(r=>r.yr.rev).sort((a,b)=>b.yr.rev-a.yr.rev);const cm=Math.max(1,...contrib.map(r=>r.yr.rev));
  return`<div class="pf-wrap">${kpi}
- <div class="pf-row"><div class="pf-box"><h4>${Y}년 월별 매출 — 목표 vs 실적</h4><div class="hint">ERP 결산(진행매출) 기준 · 막대에 마우스를 올리면 금액·달성률${last?` · 최근 결산 ${last}`:""}</div><div class="pf-leg"><span><i style="background:var(--accent)"></i>실적 매출</span><span><i class="t"></i>목표 매출</span></div>${pfMonthChart(Y,R)}</div>
+ <div class="pf-row"><div class="pf-box"><h4>${Y}년 월별 매출 — 목표 vs 실적</h4><div class="hint">ERP 결산(진행매출) + 구분손익 기타(전력·O&M 등) · 구분손익 올린 달은 재무 숫자 그대로 · 막대에 마우스를 올리면 금액·달성률${last?` · 최근 결산 ${last}`:""}</div><div class="pf-leg"><span><i style="background:var(--accent)"></i>실적 매출</span><span><i class="t"></i>목표 매출</span></div>${pfMonthChart(Y,R)}</div>
  <div class="pf-box"><h4>확인 필요 <span class="hint" style="font-weight:400">${A.length}건</span></h4><div class="hint" style="margin-bottom:4px">원가 선집행 · 실행률 95% 초과 · 발행 30일 지난 미수</div>${A.length?A.slice(0,10).map(a=>`<div class="pf-al" onclick="${a.go}"><span class="pf-tag ${a.r?"r":""}">${a.tag}</span><span>${esc(a.t)}</span></div>`).join(""):'<div class="hint" style="padding:8px 0">특이사항 없음</div>'}</div></div>
  <div class="pf-row"><div class="pf-box"><h4>현장별 진행률 vs 원가 집행률</h4><div class="hint">막대 = 진행률(매출 기준) · 세로선 = 원가 집행률(실행예산 대비) · 세로선이 막대보다 오른쪽이면 원가가 앞서 나간 것</div><div class="pf-leg"><span><i style="background:var(--accent)"></i>진행률</span><span><i style="background:var(--text);width:2px;height:12px"></i>원가 집행률</span></div>${bul||'<div class="hint">데이터 없음</div>'}</div>
  <div class="pf-box"><h4>${Y}년 현장별 매출</h4><div class="hint">당기 진행매출 · 큰 순</div>${contrib.length?contrib.map(r=>`<div class="pf-bul" onclick="${pfGo(r.e)}" style="grid-template-columns:120px minmax(0,1fr) 64px" data-tt="${esc(pfNm(r.e))}&#10;${Y}년 매출 ${e8(r.yr.rev)}억"><span class="nm">${esc(pfNm(r.e))}</span><span class="tr"><i style="width:${r.yr.rev/cm*100}%"></i></span><span class="vv">${e8(r.yr.rev)}억</span></div>`).join(""):'<div class="hint">당기 매출 없음</div>'}</div></div>
  <div class="hint">기준: 실적관리 ERP 데이터(결산·전표·채권·수금) · 주간보고 '숨김' 현장 제외 · 단위 억원 · 상세는 '실적 분석'</div></div>`}
 // ---------- 실적 분석 ----------
 function pfTabMonth(Y){const R=pfAll(Y);const P=pfPlan(Y);const last=pfLastYm();const M=Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"));
- const act=M.map((mm,i)=>R.reduce((s,r)=>({rev:s.rev+r.months[i].rev,cost:s.cost+r.months[i].cost}),{rev:0,cost:0}));const fut=mm=>`${Y}-${mm}`>last;
+ const AM=pfActMonths(Y),act=AM,eLab=segEtcLab(Y);const fut=mm=>`${Y}-${mm}`>last;
  const sum=f=>M.reduce((s,mm,i)=>s+f(mm,i),0);const tg=(mm,f)=>(P[mm]||{})[f]||0;
  const inp=(mm,f)=>`<input class="pf-in" value="${tg(mm,f)?e8(tg(mm,f)):""}" placeholder="-" onchange="pfPlanSet('${Y}','${mm}','${f}',this.value)">`;
  const row=(lab,cells,tot,cls)=>`<tr class="${cls||""}"><td><b>${lab}</b></td>${cells.join("")}<td class="n"><b>${tot}</b></td></tr>`;
  const td=(v,f)=>`<td class="n ${f?"hint":""} ${ng(v)?"neg":""}">${r8(v)?e8s(v):""}</td>`;
  const tr=pc(sum((mm,i)=>act[i].rev),sum(mm=>tg(mm,"rev")));
- return`<div class="pf-box"><h4>${Y}년 월별 목표·실적 <span class="hint" style="font-weight:400">2022 실적 관리표·월별 매출계획 양식 → 자동 · 단위 억원 · 목표 칸은 직접 입력(사업계획)</span></h4>
+ return`<div class="pf-box"><h4>${Y}년 월별 목표·실적 <span class="hint" style="font-weight:400">2022 실적 관리표·월별 매출계획 양식 → 자동 · 단위 억원 · 목표 칸은 직접 입력(사업계획)</span></h4>${segBar(Y)}
  <div style="overflow-x:auto;margin-top:8px"><table class="pf-t"><tr><th style="text-align:left">구분</th>${M.map(mm=>`<th>${Number(mm)}월</th>`).join("")}<th>누계</th></tr>
  <tr class="grp"><td colspan="14">목표 (사업계획)</td></tr>
  ${row("매출",M.map(mm=>`<td class="n">${inp(mm,"rev")}</td>`),e8(sum(mm=>tg(mm,"rev"))))}${row("매출원가",M.map(mm=>`<td class="n">${inp(mm,"cost")}</td>`),e8(sum(mm=>tg(mm,"cost"))))}
  ${row("매출이익",M.map(mm=>td(tg(mm,"rev")-tg(mm,"cost"))),e8s(sum(mm=>tg(mm,"rev")-tg(mm,"cost"))))}
- <tr class="grp"><td colspan="14">실적 (ERP 결산)</td></tr>
- ${row("매출",M.map((mm,i)=>td(act[i].rev,fut(mm))),e8(sum((mm,i)=>act[i].rev)))}${row("매출원가",M.map((mm,i)=>td(act[i].cost,fut(mm))),e8(sum((mm,i)=>act[i].cost)))}
+ <tr class="grp"><td colspan="14">실적 (ERP 결산 + 구분손익)</td></tr>
+ ${row("매출",M.map((mm,i)=>td(act[i].rev,fut(mm))),e8(sum((mm,i)=>act[i].rev)))}
+ <tr class="sub"><td class="hint" style="padding-left:16px">ㄴ 프로젝트 (진행매출)</td>${M.map((mm,i)=>td(AM[i].pRev,true)).join("")}<td class="n hint">${e8(sum((mm,i)=>AM[i].pRev))}</td></tr>
+ <tr class="sub"><td class="hint" style="padding-left:16px" title="구분손익 EPC사업부(국내) 중 제품매출(SI_진행율) 외 계정 전부">ㄴ 기타 (${esc(eLab)})</td>${M.map((mm,i)=>AM[i].seg?td(AM[i].eRev,true):`<td class="n hint" title="${Y}년 ${Number(mm)}월 구분손익 미반영">${`${Y}-${mm}`>last?"":"·"}</td>`).join("")}<td class="n hint">${e8(sum((mm,i)=>AM[i].eRev))}</td></tr>${row("매출원가",M.map((mm,i)=>td(act[i].cost,fut(mm))),e8(sum((mm,i)=>act[i].cost)))}
  ${row("매출이익",M.map((mm,i)=>td(act[i].rev-act[i].cost,fut(mm))),e8s(sum((mm,i)=>act[i].rev-act[i].cost)))}
  ${row("이익률",M.map((mm,i)=>`<td class="n hint">${act[i].rev?pc(act[i].rev-act[i].cost,act[i].rev)+"%":""}</td>`),(()=>{const r=sum((mm,i)=>act[i].rev);return r?pc(r-sum((mm,i)=>act[i].cost),r)+"%":"-"})())}
  ${row("매출 달성률",M.map((mm,i)=>{const t=tg(mm,"rev");const a=pc(act[i].rev,t);return`<td class="n ${a!=null&&a<80&&!fut(mm)?"neg":""}">${t&&!fut(mm)?a+"%":""}</td>`}),tr!=null?tr+"%":"-","tot")}
  </table></div></div>
  <div class="pf-box"><h4>현장별 월 매출 <span class="hint" style="font-weight:400">단위 억원 · 행 클릭 → 현장 원가</span></h4><div style="overflow-x:auto;margin-top:8px"><table class="pf-t"><tr><th style="text-align:left">현장</th>${M.map(mm=>`<th>${Number(mm)}월</th>`).join("")}<th>당기 계</th></tr>
  ${R.filter(r=>r.yr.rev||r.yr.cost).map(r=>`<tr class="clk" onclick="${pfGo(r.e)}"><td>${esc(pfNm(r.e))}</td>${r.months.map(m=>td(m.rev)).join("")}<td class="n"><b>${e8(r.yr.rev)}</b></td></tr>`).join("")}
+ ${(()=>{const shown=M.map((mm,i)=>R.filter(r=>r.yr.rev||r.yr.cost).reduce((s,r)=>s+r.months[i].rev,0));const adj=M.map((mm,i)=>AM[i].pRev-shown[i]);
+  return(adj.some(v=>Math.abs(v)>=1)?`<tr><td class="hint" title="구분손익 진행매출(프로젝트 코드별) − 위 현장 ERP 결산 합계. 대시보드에서 숨긴 현장·코드 미연결분 등">조정 (구분손익 진행매출 차이)</td>${adj.map(v=>td(v,true)).join("")}<td class="n hint">${e8s(adj.reduce((s,v)=>s+v,0))}</td></tr>`:"")+
+  `<tr><td>기타 (${esc(eLab)})</td>${AM.map(a=>td(a.eRev)).join("")}<td class="n"><b>${e8(sum((mm,i)=>AM[i].eRev))}</b></td></tr>`})()}
  <tr class="tot"><td>합계</td>${act.map(a=>td(a.rev)).join("")}<td class="n">${e8(sum((mm,i)=>act[i].rev))}</td></tr></table></div></div>`}
 function pfTabPoc(Y){const R=pfAll(Y);const T=k=>R.reduce((s,r)=>s+k(r),0);const n=v=>`<td class="n ${ng(v)?"neg":""}">${r8(v)?e8s(v):"-"}</td>`;
  return`<div class="pf-box"><h4>진행매출 현황 <span class="hint" style="font-weight:400">2018 진행매출현황 양식 → 자동 · 전기 = ${Y-1}년 말 누적 · 당기 = ${Y}년 분기별 · 단위 억원</span></h4><div style="overflow-x:auto;margin-top:8px"><table class="pf-t">
@@ -5246,6 +5378,63 @@ function pfTabVend(Y){const rows=[];const free=[];pfPS().forEach(e=>{const p=typ
  <tr><th style="text-align:left">업체 / 분야</th><th>현장</th><th>계약금액</th><th>지급 누계</th><th>지급률</th><th>잔액</th><th>최근 지급</th><th>지급 근거</th></tr>${body||'<tr><td colspan="8" class="hint">등록된 용역사 없음 (현장 › 용역사)</td></tr>'}</table></div>
  <div class="hint" style="margin-top:6px">지급 근거: 지급결의 = ERP 지급결의의 업체명으로 연결 · 공종 추정 = 같은 공종 용역사가 현장에 1곳뿐일 때 그 공종 외주비 전표를 그 업체 지급으로 봄</div></div>
  ${free.length?`<div class="pf-box"><h4>업체 미지정 외주비 <span class="hint" style="font-weight:400">${free.length}건 · 현장 › 용역사에 업체를 등록하면 위 표로 이동</span></h4><table class="pf-t" style="margin-top:8px"><tr><th style="text-align:left">현장</th><th>공종</th><th>지급 누계</th><th>전표</th><th></th></tr>${free.sort((a,b)=>b.amt-a.amt).map(x=>`<tr><td>${esc(pfNm(x.e))}</td><td>${esc(x.gs)}</td>${n(x.amt)}<td class="n">${x.n}건</td><td>${x.p?`<button class="btn btn-sm btn-secondary" onclick="openDetail('${x.p.id}','subs')">용역사 등록</button>`:""}</td></tr>`).join("")}</table></div>`:""}`}
+// ===================== 구분손익(재무 월별 배포 엑셀) 반영 (2026-11-16) =====================
+// 매출액·원가 시트에서 경영부서 = EPC사업부(국내) 행만 집계
+//  · 제품매출(SI_진행율) / 제품매출원가(SI) = 프로젝트 진행매출 → 프로젝트 코드별로 보관, 현장(ERP 코드 또는 수동 연결)에 붙임
+//  · 그 밖의 계정(전력·O&M·용역·상품·제품(내수) …) = 기타
+// 저장: ERPDB.settings.segPL[ym] = {src:"excel",file,at,by,rev:{계정:금액},cost:{계정:금액},si:{코드:{name,rev,cost}},chk:{rev,cost}}
+//       ERPDB.settings.segLink[코드] = ERP 현장 id (코드가 현장 코드와 다를 때 수동 연결)
+//       수기 입력 확장용: segPL[ym].man = {rev:{계정:금액},cost:{계정:금액}} 가 있으면 같은 계정 값을 덮어씀 (엑셀 재업로드해도 유지)
+const SEG_DEPT="EPC사업부(국내)",SEG_ORD=["전력","O&M","용역","상품","제품","임대"];
+const segIsSI=a=>/SI/i.test(String(a));
+function segCat(a){a=String(a);if(/전력/.test(a))return"전력";if(/O&M/i.test(a))return"O&M";if(/용역/.test(a))return"용역";if(/상품/.test(a))return"상품";if(/임대/.test(a))return"임대";if(/제품/.test(a))return"제품";return a.replace(/\(.*?\)/g,"").replace(/매출원가|매출/g,"").trim()||"기타"}
+function segStore(){if(!ERPDB)return null;const S=ERPDB.settings=ERPDB.settings||{};if(!S.segPL)S.segPL={};if(!S.segLink)S.segLink={};return S}
+const segNum=v=>typeof v==="number"?v:Number(String(v??"").replace(/[,\s원]/g,""))||0;
+function segYm(v){if(typeof v==="number"&&v>20000&&typeof XLSX!=="undefined"){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,"0")}`:""}
+ const m=String(v??"").match(/(20\d{2})\s*[-.\/년]\s*(\d{1,2})/);return m?`${m[1]}-${m[2].padStart(2,"0")}`:""}
+function segParseWB(wb){const out={},chk={};let found=0;
+ const take=(sh,kind)=>{const ws=wb.Sheets[sh];if(!ws)return;const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+  const hi=rows.findIndex(r=>String(r[0]).replace(/\s/g,"")==="년월");if(hi<0)return;const H=rows[hi].map(x=>String(x).replace(/\s/g,""));const ci=k=>H.indexOf(k);
+  const cY=ci("년월"),cD=ci("경영부서"),cA=ci("계정과목"),cM=ci("금액"),cP=ci("프로젝트"),cN=ci("프로젝트명");if(cD<0||cA<0||cM<0)return;found++;
+  for(let i=0;i<hi;i++){const r=rows[i];const j=r.findIndex(x=>String(x).trim()===SEG_DEPT);if(j>=0&&r[j+1]!==""&&!isNaN(segNum(r[j+1]))){chk[kind]=segNum(r[j+1]);break}}
+  rows.slice(hi+1).forEach(r=>{if(String(r[cD]).trim()!==SEG_DEPT)return;const ym=segYm(r[cY]);const a=String(r[cA]).trim();const v=segNum(r[cM]);if(!ym||!a||!v)return;
+   const o=out[ym]=out[ym]||{rev:{},cost:{},si:{}};o[kind][a]=(o[kind][a]||0)+v;
+   if(segIsSI(a)){const code=String(cP>=0?r[cP]:"").trim()||"(코드 없음)";const s=o.si[code]=o.si[code]||{name:"",rev:0,cost:0};if(!s.name&&cN>=0)s.name=String(r[cN]).trim();s[kind]+=v}})};
+ take("매출액","rev");take("원가","cost");
+ if(!found)throw new Error("'매출액'·'원가' 시트(년월·경영부서·계정과목·금 액 열)를 찾지 못함 — 재무 구분손익 파일인지 확인");
+ const yms=Object.keys(out);if(yms.length===1)out[yms[0]].chk=chk;return out}
+async function segplImport(files){if(typeof XLSX==="undefined")throw new Error("엑셀 라이브러리 로드 실패");const S=segStore();if(!S)throw new Error("실적관리 데이터 없음");
+ files=[...files].filter(f=>/\.xls[xm]?$/i.test(f.name)&&!f.name.startsWith("~$")).sort((a,b)=>a.lastModified-b.lastModified);if(!files.length)throw new Error("엑셀 파일(.xlsx)을 선택");
+ const done={},by=(typeof meName==="function"&&meName())||"";
+ for(const f of files){const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});const P=segParseWB(wb);
+  Object.entries(P).forEach(([ym,o])=>{const prev=S.segPL[ym];S.segPL[ym]={src:"excel",file:f.name,at:new Date().toISOString(),by,rev:o.rev,cost:o.cost,si:o.si,chk:o.chk||null,...(prev&&prev.man?{man:prev.man}:{})};done[ym]=f.name})}
+ erpPersist();try{if(curTab==="perf"||curTab==="perfx")renderPerf()}catch(e){}
+ const yms=Object.keys(done).sort();if(!yms.length)return"EPC사업부(국내) 행이 없음 — 반영된 달 없음";
+ return yms.map(ym=>{const g=segMonth(ym);const ok=g.chk&&g.chk.rev!=null?(Math.abs(g.chk.rev-g.rev)<1?" · 파일 합계 일치":` · 파일 합계 ${e8(g.chk.rev)}억과 차이`):"";return`${Number(ym.slice(5))}월 매출 ${e8(g.rev)}억 (기타 ${e8(g.etcRev)}억)${ok}`}).join(" / ")+" 반영"}
+function segMonth(ym){const S=segStore();const m=S&&S.segPL[ym];if(!m)return null;const man=m.man||{};
+ const rev=Object.assign({},m.rev,man.rev),cost=Object.assign({},m.cost,man.cost);
+ const r={ym,file:m.file,at:m.at,by:m.by,src:man.rev||man.cost?"excel+manual":m.src,chk:m.chk,rev:0,cost:0,siRev:0,siCost:0,etcRev:0,etcCost:0,cats:{},si:m.si||{}};
+ const add=(o,k)=>Object.entries(o).forEach(([a,v])=>{v=segNum(v);r[k]+=v;if(segIsSI(a))r[k==="rev"?"siRev":"siCost"]+=v;else{r[k==="rev"?"etcRev":"etcCost"]+=v;const c=segCat(a);(r.cats[c]=r.cats[c]||{rev:0,cost:0,acc:{}})[k]+=v;r.cats[c].acc[a]=(r.cats[c].acc[a]||0)+v}});
+ add(rev,"rev");add(cost,"cost");return r}
+function segOwner(code){const S=segStore();if(!S)return"";if(S.segLink[code])return S.segLink[code];const e=ERPDB.projects.find(x=>x.code&&String(x.code).trim()===code);return e?e.id:""}
+function segProj(ym,id){const g=segMonth(ym);if(!g)return null;let rev=0,cost=0;Object.entries(g.si).forEach(([code,v])=>{if(segOwner(code)===id){rev+=v.rev;cost+=v.cost}});return{rev,cost}}
+function segUnlinked(yms,ids){const o={};yms.forEach(ym=>{const g=segMonth(ym);if(!g)return;Object.entries(g.si).forEach(([code,v])=>{if(ids.includes(segOwner(code)))return;const u=o[code]=o[code]||{code,name:v.name,rev:0,cost:0,owner:segOwner(code)};u.rev+=v.rev;u.cost+=v.cost})});return Object.values(o)}
+function segLinked(id){const S=segStore();return S?Object.keys(S.segLink).filter(c=>S.segLink[c]===id):[]}
+function segLinkSet(code,id){const S=segStore();if(!S)return;if(id)S.segLink[code]=id;else delete S.segLink[code];erpPersist()}
+function segDel(ym){const S=segStore();if(!S||!S.segPL[ym])return;delete S.segPL[ym];erpPersist()}
+function segEtcLab(Y){const s=new Set();Object.keys((segStore()||{}).segPL||{}).filter(k=>k.startsWith(String(Y))).forEach(ym=>{const g=segMonth(ym);Object.keys(g.cats).forEach(c=>{if(Math.abs(g.cats[c].rev)>=1||Math.abs(g.cats[c].cost)>=1)s.add(c)})});
+ const l=[...s].sort((a,b)=>(SEG_ORD.indexOf(a)+1||99)-(SEG_ORD.indexOf(b)+1||99));return l.length?l.join(" + "):"전력 + O&M"}
+window.SEG={month:segMonth,proj:segProj,unlinked:segUnlinked,linked:segLinked,link:segLinkSet,del:segDel,import:segplImport,etcLab:segEtcLab,owner:segOwner,months:()=>Object.keys((segStore()||{}).segPL||{}).sort()};
+// 실적 분석: 월별 실적 = (구분손익 올린 달) 재무 EPC사업부(국내) 숫자 / (안 올린 달) ERP 결산 진행매출
+function pfActMonths(Y){const L=ERPDB?ERPDB.projects.filter(e=>e.show!==false):[];
+ return Array.from({length:12},(_,i)=>{const ym=`${Y}-${String(i+1).padStart(2,"0")}`;const g=segMonth(ym);let pRev=0,pCost=0;
+  if(g){pRev=g.siRev;pCost=g.siCost}else L.forEach(e=>{const m=pfMon(e,ym);pRev+=m.rev;pCost+=m.cost});
+  const eRev=g?g.etcRev:0,eCost=g?g.etcCost:0;return{ym,seg:!!g,g,pRev,pCost,eRev,eCost,rev:pRev+eRev,cost:pCost+eCost}})}
+function segPick(after){const i=document.createElement("input");i.type="file";i.multiple=true;i.accept=".xlsx,.xlsm,.xls";
+ i.onchange=async()=>{try{toast(await segplImport(i.files))}catch(e){alert("구분손익 업로드 실패: "+e.message)}if(after)after()};i.click()}
+function segBar(Y){const S=segStore();if(!S)return"";const M=Array.from({length:12},(_,i)=>`${Y}-${String(i+1).padStart(2,"0")}`);
+ return`<div class="seg-bar"><button class="btn btn-sm btn-secondary" onclick="segPick(()=>renderPerf())" title="재무 배포 '(SE) 26년 구분손익_MM월' 엑셀. 여러 달 파일을 한 번에 선택 가능 · 같은 달은 새 파일로 덮어씀">구분손익 업로드</button><span class="hint">반영 월</span>${M.map(ym=>{const m=S.segPL[ym];const n=Number(ym.slice(5));if(!m)return`<span class="seg-ch">${n}월</span>`;const g=segMonth(ym);
+  return`<span class="seg-ch on" title="${esc(m.file)}&#10;${esc((m.at||"").slice(0,16).replace("T"," "))} ${esc(m.by||"")}&#10;EPC사업부(국내) 매출 ${e8(g.rev)}억 · 기타 ${e8(g.etcRev)}억&#10;눌러서 이 달 반영 삭제" onclick="if(confirm('${n}월 구분손익 반영을 지울까? (다시 올리면 복구)')){segDel('${ym}');renderPerf()}">${n}월</span>`}).join("")}</div>`}
 function renderPerf(){const el=$("tab-perf");if(!el)return;const ys=pfYears();if(!pfY||!ys.includes(pfY))pfY=ys[ys.length-1];const Y=Number(pfY);
  if(!ERPDB||!pfPS().length){el.innerHTML='<div class="empty">실적관리(ERP) 데이터 없음 · 실적관리 › ERP 데이터에서 업로드</div>';return}
  const yearSel=`<select class="chip" onchange="pfY=this.value;renderPerf()">${ys.map(y=>`<option ${y===pfY?"selected":""}>${y}</option>`).join("")}</select>`;
@@ -6605,9 +6794,9 @@ function v28Init(){try{rpFix28();
 // ===================== v29 (2026-11-12): 판관비·영업이익을 실적 요약 · 실적 분석에도 표시 · 분류별 수주 계획 안내 =====================
 // 판관비는 실적현황·경영계획에는 반영되고 있었지만, 실적 요약·실적 분석(월별 목표·실적)에는 판관비·영업이익 줄 자체가 없어 '안 바뀌는 것처럼' 보였음
 
-function sga29(Y){const PL=planM20(Y);const last=pfLastYm()||"";const ps=pfPS();
+function sga29(Y){const PL=planM20(Y);const last=pfLastYm()||"";const AM29=pfActMonths(Y);
  return PL.map((x,i)=>{const ym=`${Y}-${String(i+1).padStart(2,"0")}`;const P=pfPlan(Y)[String(i+1).padStart(2,"0")]||{};const act=(+P.sga1a||0)+(+P.sga2a||0);const done=ym<=last;
-  let rev=0,cost=0;if(done)ps.forEach(e=>{const m=pfMon(e,ym);rev+=m.rev;cost+=m.cost});
+  const am=AM29[i],rev=done?am.rev:0,cost=done?am.cost:0;
   return{ym,plan:x.s1+x.s2,pOp:x.rev-x.cost-x.s1-x.s2,act:act||null,done,aGp:done?rev-cost:null,aOp:done?rev-cost-(act||x.s1+x.s2):null,est:done&&!act}})}
 const f29=v=>v==null?"-":(v/1e8).toFixed(2);
 function perfRows29(){const el=$("tab-perf");if(!el)return;const t=[...el.querySelectorAll("table")].find(x=>/누계/.test((x.querySelector("tr")||{}).innerText||"")&&/목표/.test(x.innerText));if(!t||t.dataset.v29)return;t.dataset.v29=1;
@@ -7015,7 +7204,7 @@ function dn36(items,center,sub){const C=["var(--accent)","#f59e0b","#14b8a6","#8
 
 // 월별 목표·실적
 function vMonth36(Y){const R=pfAll(Y);const P=pfPlan(Y);const last=pfLastYm()||"";const lm=last.startsWith(String(Y))?+last.slice(5,7):(last>String(Y)?12:0);
- const M=Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"));const act=M.map((mm,i)=>R.reduce((s,r)=>s+r.months[i].rev,0)),actC=M.map((mm,i)=>R.reduce((s,r)=>s+r.months[i].cost,0));const tg=M.map(mm=>(P[mm]||{}).rev||0),tgC=M.map(mm=>(P[mm]||{}).cost||0);
+ const M=Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"));const AM36=pfActMonths(Y),act=AM36.map(a=>a.rev),actC=AM36.map(a=>a.cost);const tg=M.map(mm=>(P[mm]||{}).rev||0),tgC=M.map(mm=>(P[mm]||{}).cost||0);
  const S=(a,n)=>a.slice(0,n).reduce((x,y)=>x+y,0);const ytd=S(act,lm),ytdC=S(actC,lm),tY=S(tg,lm),tAll=S(tg,12),tGp=S(tg,lm)-S(tgC,lm);const gp=ytd-ytdC;const rem=12-lm,need=rem>0&&tAll>ytd?(tAll-ytd)/rem:0;
  const mHit=M.slice(0,lm).filter((mm,i)=>tg[i]&&act[i]>=tg[i]).length,mT=M.slice(0,lm).filter((mm,i)=>tg[i]).length;const lmA=lm?act[lm-1]:0,lmP=lm>1?act[lm-2]:0;
  const cards=[k36(`매출 실적 (1~${lm||"-"}월)`,eok36(ytd)+"억",tY?`목표 ${eok36(tY)}억 대비 <b>${pc(ytd,tY)}%</b>`:"월별 목표 미입력",{bar:tY?pc(ytd,tY):null,tone:tY&&ytd<tY*0.9?"bad":"good"}),
@@ -7024,6 +7213,7 @@ function vMonth36(Y){const R=pfAll(Y);const P=pfPlan(Y);const last=pfLastYm()||"
   k36("매출이익",eok36(gp)+"억",`이익률 <b>${ytd?pc(gp,ytd):"-"}%</b>${tGp?` · 목표 ${eok36(tGp)}억`:""}`,{tone:gp<0?"bad":""}),
   k36(`최근 결산월 (${lm||"-"}월)`,eok36(lmA)+"억",lm>1?`전월 ${eok36(lmP)}억 · ${lmA>=lmP?"▲":"▼"} ${eok36(Math.abs(lmA-lmP))}억${mT?` · 목표 달성 ${mHit}/${mT}개월`:""}`:"")];
  const contrib=R.filter(r=>r.yr.rev>0).map(r=>({n:pfNm(r.e),v:r.yr.rev}));
+ {const eT=S(AM36.map(a=>a.eRev),12),adj=S(AM36.map(a=>a.pRev),12)-R.reduce((s,r)=>s+r.yr.rev,0);if(adj>=1e5)contrib.push({n:"그 외 현장 (구분손익 진행매출)",v:adj});if(eT>0)contrib.push({n:"기타 ("+segEtcLab(Y)+")",v:eT})}
  return`<div class="v36">${kp36(cards)}<div class="pf-row">${box36(`${Y}년 누계 매출 — 목표 vs 실적`,"선 = 1월부터 쌓인 금액 · 점선 = 목표 누계 · 마우스를 올리면 달성률",cum36(Y,act,tg,last),lg36("var(--accent)","실적 누계")+lg36("transparent","목표 누계","border-top:2px dashed var(--text-dim);height:0;margin-top:6px"))}
  ${box36(`${Y}년 현장별 매출 구성`,"당기 진행매출 비중",contrib.length?dn36(contrib,eok36(ytd),"억원"):'<div class="hint">당기 매출 없음</div>')}</div>
  <div class="pf-row">${box36(`${Y}년 월별 매출 — 목표 vs 실적`,"막대 = 실적 · 가로 점선 = 목표",pfMonthChart(Y,R),lg36("var(--accent)","실적 매출")+lg36("transparent","목표 매출","border-top:2px dashed var(--text-dim);height:0;margin-top:6px"))}
@@ -7200,10 +7390,40 @@ window.addEventListener("storage",ev=>{try{if(!ev.key)return;const mine=(typeof 
  sysBar39("tab","다른 탭(창)에서 데이터가 바뀌었습니다. 이 화면에서 그대로 수정하면 그 변경을 덮어쓸 수 있으니 새로고침 후 작업해 주세요.",'<button class="btn btn-sm" onclick="location.reload()">새로고침</button>')}catch(e){}});
 function v39Init(){try{if(!$("v39css")){const st=document.createElement("style");st.id="v39css";st.textContent=`.sys39{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:99999;display:flex;gap:10px;align-items:center;max-width:min(760px,calc(100vw - 32px));padding:10px 14px;border-radius:10px;background:var(--bg-elev,#1f2937);color:var(--text,#fff);border:1px solid var(--warning,#f59e0b);box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:13px}.sys39+.sys39{bottom:84px}@media print{.sys39{display:none!important}}`;document.head.appendChild(st)}}catch(e){console.error(e)}}
 
+// ===================== v40 (2026-11-16): 휴대폰 화면 정리 =====================
+// 원인: 화면마다 칸 수를 인라인 style(repeat(6,…), minmax(300px,…))이나 나중에 넣은 CSS로 고정해 두어
+//       기존 모바일 규칙(@media)이 덮이지 않음 → 카드 6칸이 한 줄에 끼고, 진행사항 2단이 화면 밖으로 밀림
+// 규칙: 맨 마지막에 넣어 우선 적용 · 760px 이하 2단 → 1단 · 640px 이하 카드 2칸 · 큰 숫자·제목은 화면 폭에 비례(clamp)
+function v40Init(){try{if(!$("v40css")){const st=document.createElement("style");st.id="v40css";st.textContent=`
+@media screen and (max-width:760px){
+ .tri,.tri[style]{grid-template-columns:minmax(0,1fr)!important}.tri .col,.tri .col:nth-child(2){grid-column:auto!important;order:0!important;min-width:0}
+ .pf-row,.v36 .pf-row{grid-template-columns:minmax(0,1fr)!important}.pf-row>*{min-width:0}
+}
+@media screen and (max-width:640px){
+ .pf-kpi,.pf-kpi[style],.pf-kpi.kp36,.rp-kpi,.rp-kpi[style],.hl-kpi,.sk24g{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .pf-kpi>*,.rp-kpi>*{min-width:0}
+ .pf-kpi .k,.rp-kpi .kpi{padding:10px 12px}
+ .pf-kpi .v,.kp36 .k36 .v,.kp36 .k29 .v{font-size:clamp(17px,5.4vw,22px)!important;white-space:nowrap}
+ .kpi .v,.stat .value{font-size:clamp(18px,6vw,26px)}
+ .pf-kpi .l,.pf-kpi .s,.kpi .l,.kpi .s{overflow-wrap:anywhere}
+ .main-head h2,.card-h h2{font-size:clamp(16px,4.8vw,19px)}
+ .pf-bul,.pf-bul[style]{grid-template-columns:minmax(0,1fr) auto!important;row-gap:3px;padding:6px 0}.pf-bul .nm{grid-column:1/-1}.pf-bul .vv{white-space:nowrap;font-size:12px}
+ .pc2 .kv3 div{padding:6px 8px;min-width:0}.pc2 .kv3 .v{font-size:clamp(12px,3.6vw,14px)}
+ .logbox .row3.au27-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.logbox .row3.au27-row>:first-child{grid-column:1/-1}
+ .rp{grid-template-columns:auto minmax(0,1fr)!important}.rp>:nth-child(3){grid-column:2}
+ .rp-in.on .rp-box{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}.rp-in.on .rp-box>*{min-width:0}
+ .rs35b{flex-wrap:wrap}.rs35n{flex-basis:100%;order:3}
+ .view-seg{flex-wrap:wrap;row-gap:6px}
+ div:has(>#dStageSel){flex-wrap:wrap;row-gap:6px}div:has(>#dStageSel) .btn,div:has(>#dStageSel) .hint{white-space:nowrap}
+}
+@media screen and (max-width:400px){
+ .topbar{gap:6px}.topbar .tb-right{gap:4px}.topbar .tb-right .btn{padding:0 8px;min-width:32px}.topbar .tb-icon{width:30px}.sb-toggle{width:34px;height:36px}
+}`;document.head.appendChild(st)}}catch(e){console.error(e)}}
+
 Object.values(XCOLS).forEach(def=>{def.old=def.sheet;def.sheet="사업관리_"+(def.sheet==="프로젝트"?"현장":def.sheet)});
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
-embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();applyTheme();applySecs();renderAll();
+embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();applyTheme();applySecs();renderAll();
 </script>
 <script src="/live.js"></script>
 </body></html>
