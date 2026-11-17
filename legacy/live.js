@@ -76,6 +76,54 @@
     } finally { SYNC.muted = false; }
   }
 
+  // ---------- 2026-11-17 동기화 장애 복구 (1회) ----------
+  // 01:43 배포한 live.js 문법 오류로 동기화가 멈춘 동안 고친 내용은 이 브라우저에만 저장됨.
+  // 첫 서버 데이터로 덮어쓰기 전에, 그 사이 고친 레코드(_at 이 장애 시작 이후이고 서버 것보다 최신)를 서버로 다시 보냄.
+  // 실적관리(ERP) 레코드는 수정 시각이 없어 자동 복구하지 않고, 서버와 다르면 이 브라우저에 사본만 보관 (epc-outage-erp-2611).
+  var OUT_KEY = "epc-outage-2611-done", OUT_FROM = "2026-11-16T16:30:00.000Z";
+  function grabOutage() {
+    try { if (localStorage.getItem(OUT_KEY)) return null; } catch (e) { return null; }
+    var C = SYNC.cols(), recs = [], erp = [];
+    Object.keys(C).forEach(function (c) {
+      var a = C[c];
+      if (!Array.isArray(a)) return;
+      a.forEach(function (o) {
+        if (!o || o.id == null) return;
+        if (c === "erp") erp.push(o);
+        else if (o._at && o._at >= OUT_FROM) recs.push({ c: c, d: JSON.parse(JSON.stringify(o)) });
+      });
+    });
+    return { recs: recs, erp: JSON.stringify(erp) };
+  }
+  function recoverOutage(R, recs) {
+    var srv = {}, se = {};
+    recs.forEach(function (r) { srv[r.c + "|" + r.d.id] = r.d; if (r.c === "erp") se[r.d.id] = JSON.stringify(r.d); });
+    var ops = [];
+    R.recs.forEach(function (x) {
+      var s = srv[x.c + "|" + x.d.id];
+      if (!s || String(s._at || "") < x.d._at) ops.push({ c: x.c, op: "put", id: x.d.id, d: x.d, at: x.d._at, by: x.d._by || myName() });
+    });
+    var erpDiff = 0;
+    try { JSON.parse(R.erp).forEach(function (o) { if (se[o.id] !== JSON.stringify(o)) erpDiff++; }); } catch (e) {}
+    try {
+      if (erpDiff) localStorage.setItem("epc-outage-erp-2611", R.erp);
+      localStorage.setItem(OUT_KEY, new Date().toISOString());
+    } catch (e) {}
+    if (ops.length) {
+      applyOps(ops);
+      var b = ++L.bid;
+      L.pending.push({ b: b, ops: ops });
+      savePending();
+      raw({ t: "ops", b: b, ops: ops });
+    }
+    console.log("[live] 동기화 장애 복구: 재전송 " + ops.length + "건 · 실적관리 차이 " + erpDiff + "건");
+    if (ops.length || erpDiff) try {
+      if (!localStorage.getItem("epc-qa-noalert")) alert("11/17 새벽~오후 동기화가 멈춘 동안 이 브라우저에서 고친 내용을 확인했습니다.\n\n" +
+        (ops.length ? "· 서버에 다시 올림: " + ops.length + "건\n" : "") +
+        (erpDiff ? "· 실적관리(주간보고·ERP) 현장 " + erpDiff + "곳이 서버와 다름 → 자동 반영하지 않고 이 브라우저에 사본 보관. 그 사이 주간보고에서 고친 게 있으면 담당자에게 알려주세요.\n" : ""));
+    } catch (e) {}
+  }
+
   // ---------- 보내기 ----------
   SYNC.connect({
     send: function (ops) {
@@ -101,6 +149,7 @@
       var m; try { m = JSON.parse(e.data); } catch (x) { return; }
       if (m.t === "snap") {
         L.me = m.me;
+        var rescue = !L.everReady ? grabOutage() : null;
         applySnap(m.recs || []);
         L.ready = true; L.everReady = true;
         // 끊긴 동안 고친 내용: 내 화면에 다시 적용하고 서버로 재전송
@@ -110,6 +159,7 @@
           applyOps(all);
           L.pending.forEach(function (p) { raw({ t: "ops", b: p.b, ops: p.ops }); });
         }
+        if (rescue) try { recoverOutage(rescue, m.recs || []); } catch (x) { console.error("[live] outage", x); }
         // 서버 데이터를 받은 뒤에만 돌려야 하는 데이터 맞춤(마이그레이션) — 받기 전 로컬 데이터는 오래됐을 수 있음
         try { if (typeof window.onLiveSnap === "function") window.onLiveSnap(); } catch (x) { console.error("[live] onLiveSnap", x); }
       } else if (m.t === "ack") {
@@ -119,11 +169,7 @@
         // 서버가 대량 삭제를 차단: 그 묶음은 버리고 서버 데이터로 화면을 되돌림
         L.pending = L.pending.filter(function (p) { return p.b !== m.b; });
         savePending();
-        try { alert("서버가 이번 수정을 거부했습니다 (대량 삭제 보호)
-
-사유: " + (m.reason || "") + "
-
-화면을 서버 데이터로 되돌립니다. 정말 지워야 하는 경우 관리자에게 요청하세요."); } catch (x) {}
+        try { alert("서버가 이번 수정을 거부했습니다 (대량 삭제 보호)\n\n사유: " + (m.reason || "") + "\n\n화면을 서버 데이터로 되돌립니다. 정말 지워야 하는 경우 관리자에게 요청하세요."); } catch (x) {}
         raw({ t: "hello", name: myName() });
       } else if (m.t === "ops") {
         applyOps(m.ops || []);

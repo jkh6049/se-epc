@@ -21,8 +21,7 @@ if (!pw) {
   process.exit(1);
 }
 let admin = process.env.ADMIN_PASSWORD || "";
-if (!admin && fs.existsSync(".dev.vars")) admin = (fs.readFileSync(".dev.vars", "utf8").match(/^ADMIN_PASSWORDs*=s*"?([^"
-]*)"?/m) || [])[1] || "";
+if (!admin && fs.existsSync(".dev.vars")) admin = (fs.readFileSync(".dev.vars", "utf8").match(/^ADMIN_PASSWORD\s*=\s*"?([^"\r\n]*)"?/m) || [])[1] || "";
 if (force && !admin) {
   console.error("--force 는 관리자 비밀번호가 필요해: ADMIN_PASSWORD 환경변수 또는 .dev.vars");
   process.exit(1);
