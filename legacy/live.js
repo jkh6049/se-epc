@@ -110,6 +110,8 @@
           applyOps(all);
           L.pending.forEach(function (p) { raw({ t: "ops", b: p.b, ops: p.ops }); });
         }
+        // 서버 데이터를 받은 뒤에만 돌려야 하는 데이터 맞춤(마이그레이션) — 받기 전 로컬 데이터는 오래됐을 수 있음
+        try { if (typeof window.onLiveSnap === "function") window.onLiveSnap(); } catch (x) { console.error("[live] onLiveSnap", x); }
       } else if (m.t === "ack") {
         L.pending = L.pending.filter(function (p) { return p.b !== m.b; });
         savePending();

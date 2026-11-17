@@ -4001,9 +4001,9 @@ function renderSitesTab(p,c){if(siteView&&siteById(siteView)&&siteById(siteView)
  const lateN=l.reduce((s,x)=>s+siteLate(x).length,0);const avg=Math.round(l.reduce((s,x)=>s+siteProg(x),0)/l.length);const cap=l.reduce((s,x)=>s+Number(x.capacity||0),0);const lastDue=l.map(siteDue).filter(Boolean).sort().slice(-1)[0];
  h+=`<div class="rp-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px"><div class="kpi blue"><div class="k">사이트</div><div class="v">${l.length}</div><div class="s">${cap?"합계 "+(Math.round(cap/10)/100)+"MW":""}</div></div><div class="kpi green"><div class="k">평균 진척</div><div class="v">${avg}%</div><div class="s">사이트 마일스톤 완료 비율</div></div><div class="kpi ${lateN?"red":""}"><div class="k">지연 마일스톤</div><div class="v">${lateN}</div><div class="s">${l.filter(x=>siteLate(x).length).map(x=>esc(x.name)).join(", ")||"없음"}</div></div><div class="kpi"><div class="k">최종 준공 예정</div><div class="v" style="font-size:20px">${lastDue||"-"}</div><div class="s">${lastDue?dLabel(lastDue):""}</div></div></div>`;
  h+=`<div class="card-grid">${l.map(s=>{const n=siteNext(s),lt=siteLate(s),pr=siteProg(s),due=siteDue(s),g=lastLog("site",s.id);const nd=n&&n.planDate?daysUntil(n.planDate):null;
-  return`<div class="pcard" onclick="openSite('${p.id}','${s.id}')"><div><span class="badge outline">${esc(siteStage(s))}</span>${s.installType?`<span class="badge outline">${esc(s.installType)}</span>`:""}${lt.length?`<span class="badge" style="background:var(--danger-dim);color:var(--danger)">지연 ${lt.length}</span>`:""}</div>
+  return`<div class="pcard" onclick="openSite('${p.id}','${s.id}')" style="${siteSel49(s)==="제외"?"opacity:.55":""}"><div>${siteSelBadge49(s)}<span class="badge outline">${esc(siteStage(s))}</span>${s.installType?`<span class="badge outline">${esc(s.installType)}</span>`:""}${lt.length?`<span class="badge" style="background:var(--danger-dim);color:var(--danger)">지연 ${lt.length}</span>`:""}</div>
   <div class="title">${esc(s.name)}</div><div class="meta">${s.capacity?(Math.round(s.capacity/10)/100)+"MW":"용량 미입력"}${s.address?" · "+esc(s.address):""}${due?` · 준공 ${due} (${dLabel(due)})`:""}</div>
-  <div class="bar"><i style="width:${pr}%"></i></div><div class="meta">마일스톤 ${pr}% · 다음: ${n?esc(n.name)+(n.planDate?` <span class="${nd<0?"delay":nd<=7?"soon":""}">${n.planDate.slice(5)} (${dLabel(n.planDate)})</span>`:""):"없음"}</div>
+  <div class="bar"><i style="width:${pr}%"></i></div><div class="meta">마일스톤 ${pr}% · 다음: ${n?esc(n.name)+(n.planDate?` <span class="${siteSel49(s)!=="확정"?"hint":nd<0?"delay":nd<=7?"soon":""}">${n.planDate.slice(5)} (${siteSel49(s)!=="확정"?siteSel49(s)+" · 집계 제외":dLabel(n.planDate)})</span>`:""):"없음"}</div>
   ${s.statusLine?`<div class="meta" style="font-style:italic">${esc(s.statusLine)}</div>`:""}${g?`<div class="meta" style="margin-top:4px;border-top:1px dashed var(--border);padding-top:4px"><span class="hint">${g.date.slice(5)}</span> ${esc(g.text.slice(0,60))}${g.text.length>60?"…":""}</div>`:""}</div>`}).join("")}</div>`;
  c.innerHTML=h}
 function renderSiteView(p,s,c){const l=siteMsOf(s.id);const lt=siteLate(s),pr=siteProg(s),n=siteNext(s),due=siteDue(s);
@@ -6351,7 +6351,7 @@ function combine24(p){const ss=siteList24(p).filter(s=>schedOf(s));if(!ss.length
 function siteCard24(p,s,isAll){const sc=isAll?schedOf(p):schedOf(s);const M=thisYm20();const kw=isAll?siteList24(p).reduce((a,x)=>a+siteKw24(x),0):siteKw24(s);
  const cum=sc?schedCum20(sc):{};const ks=Object.keys(cum).sort();const cp=ks.filter(k=>k<=M).map(k=>cum[k]).pop()||0;const mx=sc?Math.max(...Object.values(sc.months),1):1;
  const spark=sc?`<div class="sc24-sp">${ks.map(k=>`<i style="height:${Math.max(2,(+sc.months[k]||0)/mx*100)}%" class="${k<M?"past":k===M?"cur":""}" title="${k} ${pctS(+sc.months[k]||0)}"></i>`).join("")}</div>`:`<div class="sc24-sp empty">공정표 없음</div>`;
- const id=isAll?"__all":s.id;return`<div class="sc24-c ${sc24Site===id?"on":""} ${isAll?"all":""}" onclick="sc24Site='${id}';renderDetail()"><div class="sc24-h"><b>${esc(isAll?"전체 (사이트 합산)":s.name)}</b><span class="hint">${kw?kw.toLocaleString("ko-KR",{maximumFractionDigits:2})+" kW":""}</span></div>
+ const id=isAll?"__all":s.id;return`<div class="sc24-c ${sc24Site===id?"on":""} ${isAll?"all":""}" onclick="sc24Site='${id}';renderDetail()"><div class="sc24-h"><b>${esc(isAll?"전체 (사이트 합산)":s.name)}</b>${isAll?"":siteSelBadge49(s)}<span class="hint">${kw?kw.toLocaleString("ko-KR",{maximumFractionDigits:2})+" kW":""}</span></div>
   ${spark}<div class="sc24-m">${sc?`<span>${ks[0]?ks[0].slice(2).replace("-","."):""} ~ ${ks.length?ks[ks.length-1].slice(2).replace("-","."):""}</span><span>이번 달까지 <b>${pctS(cp)}</b></span>`:`<span class="hint">엑셀을 올리면 시트 이름으로 자동 매칭</span>`}</div></div>`}
 function renderSites24(p){const L=siteList24(p);const cur=sc24Site&&(sc24Site==="__all"||L.some(s=>s.id===sc24Site))?sc24Site:null;
  const bar=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b style="font-size:15px">예상공정표</b><span class="hint">사이트 ${L.length}곳 · 사이트별 공정표를 용량(kW)으로 합산해 매출·자금 배분에 사용</span>
@@ -7737,9 +7737,53 @@ function handoverGaps48(p){if(!p)return[];const g=[];const e=typeof erpLinkOf===
  return g}
 // 마일스톤 템플릿 항목의 담당 팀 = 항목 stage의 주관 팀 (템플릿 데이터는 그대로, 팀은 계산)
 function tplTeam48(item){return stageTeam48(item&&item.stage)||"pm"}
+// ===================== v49: 착공 기준 인계 · 마일스톤 팀 구분 · 사이트 선정 대기 =====================
+// 1) 인계 시점 = 착공계 승인 완료. 착공계 승인·하도급 계약 체결은 '착공 준비'(사업지원) 단계, 사업관리 마일스톤은 '착공 (현장 개시)'부터
+//    템플릿·기존 마일스톤을 한 번 맞춤 (같은 이름이 이미 맞으면 아무것도 안 바뀜). 근거: docs/PIPELINE.md 4장
+PIPE48.find(x=>x.k==="plan").note="공사계획신고 · 하도급 계약 · 착공계 승인 (착공계 승인 = 사업관리 인계 기준)";
+const MS49_PLAN=["착공계 승인","하도급 계약 체결"];
+const MS49_TEAM={"실행예산 승인":"support","계약 체결 / 킥오프":"sales","계약 체결":"sales"};
+// 사업관리 기본 마일스톤 (인수인계 자료 03 §1~§5 기준으로 착공 이후 항목 보강)
+const MS49_PM_ADD=[
+ {after:"하도급 계약 체결",it:{name:"착공 (현장 개시) · 인계 킥오프",owner:"본인",gap:7,stage:"start"}},
+ {after:"착공 (현장 개시) · 인계 킥오프",it:{name:"기준 공정표 · 3주 롤링 셋팅",owner:"본인",gap:7,stage:"start"}},
+ {after:"준공검사원 제출",it:{name:"As-Built 도면 · O&M 매뉴얼 제출",owner:"하도급사",gap:7,stage:"handover"}},
+ {after:"As-Built 도면 · O&M 매뉴얼 제출",it:{name:"하자보증이행증권 제출",owner:"본인",gap:3,stage:"handover"}}];
+function tplMig49(list){if(!Array.isArray(list))return 0;let n=0;
+ list.forEach(it=>{if(MS49_PLAN.includes(it.name)&&it.stage==="start"){it.stage="plan";n++}if(MS49_TEAM[it.name]&&it.team!==MS49_TEAM[it.name]){it.team=MS49_TEAM[it.name];n++}});
+ if(!list.some(it=>it.name==="착공계 승인"))return n; // 파트너·사이트 템플릿은 구성이 달라 항목 추가 안 함
+ MS49_PM_ADD.forEach(({after,it})=>{if(list.some(x=>x.name===it.name))return;const i=list.findIndex(x=>x.name===after);if(i<0)return;list.splice(i+1,0,Object.assign({},it));n++});return n}
+function msMig49(){let n=0;milestones.forEach(m=>{if(MS49_PLAN.includes(m.name)&&m.stage==="start"){m.stage="plan";n++}});return n}
+function v49Mig(){try{let n=0;if(typeof tpl==="object"&&tpl)Object.keys(tpl).forEach(k=>n+=tplMig49(tpl[k]));n+=msMig49();if(n){save();renderAll()}return n}catch(e){console.error("[v49] 마일스톤 기준 맞춤",e);return 0}}
+// 서버 연결 시: 서버 데이터를 받은 직후 실행 (live.js onLiveSnap) · 단독 파일(서버 없음)일 때만 바로 실행
+function v49Init(){window.onLiveSnap=v49Mig;if(!location.host)v49Mig()}
+// 템플릿 항목 팀 = 항목에 지정한 팀, 없으면 단계 주관 팀
+tplTeam48=function(item){return(item&&item.team)||stageTeam48(item&&item.stage)||"pm"};
+// 2) 단계를 착공 이후로 옮기는 순간 = 사업관리 인계. 막지 않고 빠진 것만 보여주고, 인계일·당시 미비 사항 기록
+{const _sg49=stageGate;stageGate=function(p,target){const crossing=isPreStart48(p)&&pipeIdx48(target)>=pipeIdx48(PIPE_HANDOVER48);if(!crossing)return _sg49.apply(this,arguments);
+ const g=handoverGaps48(p);if(!_sg49.apply(this,arguments))return false;
+ if(g.length&&!confirm(`[사업지원 → 사업관리 인계] ${p.name}\n\n${g.map(x=>"▲ "+x).join("\n")}\n\n인계 후에도 보완 가능. 인계할까?`))return false;
+ p.handoff=Object.assign({},p.handoff||{},{pmAt:todayStr(),pmBy:(typeof meName==="function"&&meName())||"",pmGaps:g});return true}}
+// 3) 사이트 선정 상태: 확정(기본) / 선정 대기 / 제외 — 대기·제외 사이트 마일스톤은 지연·진척 집계에서 빼고 기록은 그대로 둠
+const SEL49=["확정","선정 대기","제외"];
+function siteSel49(s){return s&&SEL49.includes(s.sel)?s.sel:"확정"}
+function msPaused49(m){if(!m||!m.siteId)return false;const s=siteById(m.siteId);return siteSel49(s)!=="확정"}
+{const _late49=isMsLate;isMsLate=function(m){return msPaused49(m)?false:_late49(m)}}
+{const _pg49=progress;progress=function(p){const l=milestones.filter(m=>m.projectId===p.id&&m.status!=="해당없음"&&!msPaused49(m));if(!l.length)return 0;return Math.round(l.filter(m=>m.status==="완료").length/l.length*100)}}
+{const _nx49=nextMs;nextMs=function(p){return msOf(p.id).find(m=>m.status!=="완료"&&m.status!=="해당없음"&&!msPaused49(m))}}
+function siteSelBadge49(s){const v=siteSel49(s);if(v==="확정")return"";return`<span class="badge" style="background:${v==="제외"?"var(--bg-elev2)":"color-mix(in srgb,var(--warning) 20%,transparent)"};color:${v==="제외"?"var(--text-faint)":"var(--warning)"}" title="${esc(s.selMemo||"")}${s.selDue?" · 결정 예정 "+s.selDue:""}">${v}${s.selDue&&v==="선정 대기"?" ~"+s.selDue.slice(5):""}</span>`}
+// 사이트 편집 창에 선정 상태 칸
+{const _osm49=openSiteModal;openSiteModal=function(pid,sid){_osm49.apply(this,arguments);if(!$("siSel")){$("siNote").closest(".form-row").insertAdjacentHTML("beforebegin",`<div class="form-grid3" id="siSelRow"><div class="form-row"><label>선정 상태</label><select id="siSel">${SEL49.map(v=>`<option>${v}</option>`).join("")}</select></div><div class="form-row"><label>결정 예정일</label><input type="date" id="siSelDue"></div><div class="form-row"><label>선정 관련 메모</label><input id="siSelMemo" placeholder="비우면 없음"></div></div><div class="hint" style="margin:-4px 0 8px">선정 대기·제외 사이트는 마일스톤 지연·진척 집계에서 빠짐 (기록은 유지). 선정되면 '확정'으로 바꾸고 일정만 다시 잡으면 됨</div>`)}
+ const s=sid?siteById(sid):null;$("siSel").value=siteSel49(s);$("siSelDue").value=s&&s.selDue||"";$("siSelMemo").value=s&&s.selMemo||""}}
+{const _ss49=saveSite;saveSite=function(){const sel=$("siSel")?$("siSel").value:"확정",due=$("siSelDue")?$("siSelDue").value:"",memo=$("siSelMemo")?$("siSelMemo").value.trim():"";const id=$("siId").value;const r=_ss49.apply(this,arguments);
+ const s=siteById(id||siteView);if(s&&(siteSel49(s)!==sel||(s.selDue||"")!==due||(s.selMemo||"")!==memo)){s.sel=sel==="확정"?"":sel;s.selDue=due;s.selMemo=memo;s.updatedAt=new Date().toISOString();save();if($("detailBackdrop").classList.contains("open"))renderDetail();renderAll()}return r}}
+// 사이트 상세 위에 안내
+{const _rsv49=renderSiteView;renderSiteView=function(p,s,c){_rsv49.apply(this,arguments);const v=siteSel49(s);if(v==="확정")return;c.insertAdjacentHTML("afterbegin",`<div class="panel" style="border-left:3px solid var(--warning);margin-bottom:10px"><b>${v}</b>${s.selDue?` · 결정 예정 ${esc(s.selDue)} (${dLabel(s.selDue)})`:""}${s.selMemo?` · ${esc(s.selMemo)}`:""}<div class="hint">이 사이트 마일스톤은 지연·진척 집계에서 빠져 있음 · 결과가 나오면 [사이트 편집]에서 선정 상태 변경</div></div>`)}}
+// 홈 확인 목록: 선정 대기 사이트 (결정 예정일 지나면 빨강)
+{const _hc49=homeChecks;homeChecks=function(){const out=_hc49.apply(this,arguments);activeProjects().forEach(p=>sitesOf(p.id).filter(s=>siteSel49(s)==="선정 대기").forEach(s=>{const over=s.selDue&&daysUntil(s.selDue)<0;out.push({p,tag:"선정 대기",cls:over?"r":"",t:`${s.name} — ${over?`결정 예정일(${s.selDue}) 지남 · 결과 확인`:s.selDue?`결정 예정 ${s.selDue}`:"선정 여부 미정"} (일정·지연 집계 제외)`,tab:"sites",ord:over?1:5})}));return out.sort((a,b)=>a.ord-b.ord)}}
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
-embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();applyTheme();applySecs();renderAll();
+embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();
 </script>
 <script src="/live.js"></script>
 </body></html>
