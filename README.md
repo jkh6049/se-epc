@@ -16,6 +16,10 @@ Cloudflare Workers 위에서 도는 팀 공용 사업관리 대시보드. 모든
 - 비밀번호를 바꾸면 기존 로그인은 전부 풀림
 - seed 스크립트는 SITE_PASSWORD 환경변수 또는 .dev.vars 값을 `x-site-password` 헤더로 보냄
 
+## 개발 방향
+
+EPC사업부 파이프라인(영업팀 → 사업지원팀 → 사업관리팀) 기준·단계·인계·지표 정의: [docs/PIPELINE.md](docs/PIPELINE.md)
+
 ## 구조
 
 ```

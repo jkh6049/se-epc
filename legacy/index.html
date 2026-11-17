@@ -1745,7 +1745,7 @@ function rWeekly(){
  h+=`<div class="hint ${est.length?"warn":""}"><b>${w.label}차 주간보고</b> · 실적 기준일 <b>${KD(w.cutoff)}</b>${DB.settings.cut?" (수동 지정)":" (전주 금요일)"} · 단위 ${UN()} · 미승인 원가 ${DB.settings.unappr?"포함":"제외"}`+
   (est.length?` · ${mm}월은 ERP 미마감이라 <b>${est.map(c=>esc(NM(c.p))).join(", ")}</b> 매출이 전표 기준 추정치입니다.`:"")+` · [복사]는 PPT 표 열 순서 그대로 (회색 참고 열 제외), PPT 표에서 붙여넣을 첫 칸을 선택하고 Ctrl+V</div>`;
  const k=R.kpi,pk=ps&&ps.kpi;const pv=(v,f)=>pk&&pk[v]!=null?`전주 ${f(pk[v])}`:"전주 —";
- h+=`<div class="card"><div class="card-h"><div><h2>3. 사업관리팀 주간보고 · ${w.prevLabelFull} — 핵심 현황 스냅샷</h2><div class="desc">수행 중 계약금액 = 계약 후 현재 수행 중인 현장 계약금액 합계 · 실제공정률 = 물리적 공사 진행률 (매출 진행률과 별도) · 전주 값은 지난주 '주간 확정' 기준</div></div></div>
+ h+=`<div class="card"><div class="card-h"><div><h2>3. 사업관리팀 주간보고 · ${w.prevLabelFull} — 핵심 현황 스냅샷</h2><div class="desc">수행 중 계약금액 = 계약 후 현재 수행 중인 현장 계약금액 합계 · 실제공정률 = ERP 진행률(누적원가÷실행예산), 실제 공정이 다를 때만 직접 입력 · 전주 값은 지난주 '주간 확정' 기준</div></div></div>
  <div class="grid g4">
   <div class="kpi"><div class="l">진행 현장 건수</div><div class="v">${k.n}<small>개소</small></div><div class="s">${pv("n",x=>x+"개소")}</div></div>
   <div class="kpi"><div class="l">중점 관리 현장 (RAG R·A)</div><div class="v">${k.focus}<small>개소</small></div><div class="s">${pv("focus",x=>x+"개소")}</div></div>
@@ -1753,11 +1753,11 @@ function rWeekly(){
   <div class="kpi"><div class="l" title="실제공정률 = 현장별 실제공정률(주간 입력, 없으면 기성 공정률)의 평균 · 계획공정률 = 주간 입력값 평균">평균 실제공정률 / 평균 계획공정률</div><div class="v">${k.actAvg==null?"—":P(k.actAvg,1)+"<small>%</small>"} / ${k.planAvg==null?"—":P(k.planAvg,1)+"<small>%</small>"}</div><div class="s">${pk&&pk.actAvg!=null?`전주 ${P(pk.actAvg,1)}% / ${pk.planAvg==null?"—":P(pk.planAvg,1)+"%"}`:"전주 —"}</div></div>
  </div></div>`;
  // 7p
- h+=`<div class="card"><div class="card-h"><div><h2>프로젝트 진행현황 (계약 완료 ~ COD 이전 현장)</h2><div class="desc">실제공정률 = 물리적 공사 진행률 (표에서 입력, 비우면 기성 공정률) · 매출 진행률(참고) = 누적 매출액 ÷ 계약금액 · 목표 GP = 100 − 실행율(ERP) · 하도급사 = 현장 › 용역사 · 회색 참고 열은 복사 제외</div></div><div class="acts"><button class="btn s p" onclick="pptImg('site')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('site')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
+ h+=`<div class="card"><div class="card-h"><div><h2>프로젝트 진행현황 (계약 완료 ~ COD 이전 현장)</h2><div class="desc">실제공정률 = ERP 진행률(누적원가÷실행예산) 기본, 표에서 입력하면 덮어씀 · 매출 진행률(참고) = 누적 매출액 ÷ 계약금액 (진행기준이라 ERP 진행률과 같음) · 목표 GP = 100 − 실행율(ERP) · 하도급사 = 현장 › 용역사 · 회색 참고 열은 복사 제외</div></div><div class="acts"><button class="btn s p" onclick="pptImg('site')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('site')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
  <div class="scroll"><table class="t" id="t7"><thead><tr><th>번호</th><th>고객/발주처</th><th>현장명</th><th>하도급사</th><th>계약금액</th><th>PV용량</th><th>설치방식</th><th>모듈 제조사</th><th>인버터 제조사</th><th>계획공정률(%)</th><th>실제공정률(%)</th><th>목표 GP(%)</th><th>목표준공일</th><th>RAG 등급</th><th>주요 현안/Risk</th><th class="ref">실행율</th><th class="ref">매출 진행률</th><th class="ref" title="이번 주에 계획공정률·RAG·현안을 확인했는지">이번주 확인</th></tr></thead><tbody>`+
  R.list.map((c,i)=>{const p=c.p,up=p.fieldWeek===w.mon;return`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td>${esc(subOf44(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${esc(capF(p.capacity))}</td><td class="c">${esc(p.install)}</td><td>${esc(p.module)}</td><td>${esc(p.inverter)}</td>
   <td data-copy="${esc(p.pmPlan)}"><input class="ci num" value="${esc(p.pmPlan)}" onchange="setPF('${p.id}','pmPlan',this.value)"></td>
-  <td data-copy="${esc(actPct44(p)==null?"":P(actPct44(p)))}"><input class="ci num" value="${esc(p.pmActual)}" placeholder="${actPct44(p)==null?"—":"기성 "+P(actPct44(p))}" title="물리적 공사 진행률 · 비우면 기성 공정률" onchange="setPF('${p.id}','pmActual',this.value)"></td>
+  <td data-copy="${esc(actPct44(p)==null?"":P(actPct44(p)))}"><input class="ci num" value="${esc(pctIn44(p.pmActual)==null?"":p.pmActual)}" placeholder="${actPct44(p)==null?"—":(pctIn44(p.pmActual)==null&&(p.closings||[]).length?"ERP ":"")+P(actPct44(p))}" title="비우면 ERP 진행률(누적원가÷실행예산) · 실제 공정이 다를 때만 입력" onchange="setPF('${p.id}','pmActual',this.value)"></td>
   <td class="n">${P(c.gp)}</td><td class="c">${esc(fmtTarget(p.targetDate))}</td>
   <td class="c" data-copy="${esc(p.rag)}"><select class="ci" style="width:52px" onchange="setPF('${p.id}','rag',this.value)">${["","G","A","R"].map(x=>`<option ${p.rag===x?"selected":""}>${x}</option>`).join("")}</select></td>
   <td data-copy="${esc(p.issue)}" style="min-width:200px"><input class="ci" value="${esc(p.issue)}" onchange="setPF('${p.id}','issue',this.value)"></td>
@@ -1858,9 +1858,9 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
  <div class="card"><div class="card-h"><div><h2>진행매출(회계) — 프로젝트별 월별 (${UN()})</h2><div class="desc">회계 기준 매출 (재무 구분손익·ERP 진행매출) · 위 실적관리 표의 매출액(세금계산서 기준)과 다름 — 차이는 미청구공사 · ${Y}년 1~12월 · 계약금액 열: 매출=계약금액 · 매출원가=실행예산 · 매출이익=목표이익 · 수금액=누적 수금액(VAT 포함) · ${segTxt}</div></div><div class="acts">${G?`<button class="btn s p" onclick="segPick35()" title="재무 배포 '(SE) ${YY}년 구분손익_MM월' 엑셀 — 여러 달 한 번에 선택 가능, 같은 달은 새 파일로 덮어씀">구분손익 업로드</button>`:""}<button class="btn s" onclick="UI.pfGrpEd=!UI.pfGrpEd;render()">${UI.pfGrpEd?"구분 편집 닫기":"구분 편집"}</button><button class="btn s" onclick="copyTable('t8y')" title="엑셀·PPT 표에 붙여넣기">표 복사</button></div></div>
  ${chk.length?`<div class="hint warn">${chk.map(esc).join(" · ")}</div>`:""}${unlH}
  <div class="scroll"><table class="t" id="t8y"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`}
-// v44: 실제공정률 = 물리적 공사 진행률 — 주간보고에서 입력한 값, 없으면 대시보드 기성 공정률 (매출 진행률과 별도)
+// v48: 실제공정률 = 회사 정의상 ERP 진행률(누적원가÷실행예산, 100% 상한). 실제 공정이 다를 때만 주간보고에서 직접 입력해 덮어씀. ERP 결산 없으면 기성 공정률
 const pctIn44=v=>{v=s(v).replace(/[%\s]/g,"");return/^-?\d+(\.\d+)?$/.test(v)?Number(v):null};
-function actPct44(p){const v=pctIn44(p.pmActual);if(v!=null)return v;try{const P=window.parent,d=P.dashOf&&P.dashOf(p);const k=d&&P.kpiOf(d);return k&&k.pct!=null&&!isNaN(k.pct)?Number(k.pct):null}catch(e){return null}}
+function actPct44(p){const v=pctIn44(p.pmActual);if(v!=null)return v;const _c=(p.closings||[]).slice().sort((a,b)=>String(a.ym).localeCompare(String(b.ym))).pop();const _r=_c&&_c.cum?Number(_c.cum.rate):NaN;if(isFinite(_r)&&_r>0)return Math.min(100,Math.round(_r*100)/100);try{const P=window.parent,d=P.dashOf&&P.dashOf(p);const k=d&&P.kpiOf(d);return k&&k.pct!=null&&!isNaN(k.pct)?Number(k.pct):null}catch(e){return null}}
 // 하도급사 = 대시보드 현장 › 용역사 (없으면 현장 기본정보의 하도급사)
 function subOf44(p){try{const P=window.parent,d=P.dashOf&&P.dashOf(p);if(!d)return"";const L=(P.subsOf&&P.subsOf(d.id))||[];const n=[...new Set(L.map(x=>P.subName?P.subName(x):(x.vendorName||"")).filter(Boolean))];return n.join(", ")||s(d.vendor)}catch(e){return""}}
 // v41: 월간 누적 매출액이 어떻게 구성됐는지 한 줄로 (실적 분석·실적현황 카드와 바로 맞춰 볼 수 있게)
@@ -2775,7 +2775,7 @@ function capF(v){const t=String(v??"").trim();return /^-?d+.d{6,}$/.test(t)?Stri
 /* 인쇄·PDF는 항상 화이트 (Ctrl+P 포함) */
 (function(){let prev=null;addEventListener("beforeprint",()=>{const H=document.documentElement;if(H.dataset.theme!=="light"){prev=H.dataset.theme||"";H.dataset.theme="light"}});addEventListener("afterprint",()=>{if(prev!==null){document.documentElement.dataset.theme=prev;prev=null}})})();
 /* 예시(연한 글씨) 문구 제거 — 검색·붙여넣기 안내만 유지 */
-(function(){const KEEP=/검색|비우면|Ctrl\+A|^—$/;const fix=el=>{const v=el.getAttribute("placeholder");if(v!=null&&!KEEP.test(v))el.removeAttribute("placeholder")};const all=r=>{if(r.hasAttribute&&r.hasAttribute("placeholder"))fix(r);if(r.querySelectorAll)r.querySelectorAll("[placeholder]").forEach(fix)};try{all(document.documentElement);new MutationObserver(ms=>{for(const m of ms){if(m.type==="attributes")fix(m.target);else m.addedNodes.forEach(n=>{if(n.nodeType===1)all(n)})}}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["placeholder"]})}catch(e){}})();
+(function(){const KEEP=/검색|비우면|Ctrl\+A|^—$|^ERP /;const fix=el=>{const v=el.getAttribute("placeholder");if(v!=null&&!KEEP.test(v))el.removeAttribute("placeholder")};const all=r=>{if(r.hasAttribute&&r.hasAttribute("placeholder"))fix(r);if(r.querySelectorAll)r.querySelectorAll("[placeholder]").forEach(fix)};try{all(document.documentElement);new MutationObserver(ms=>{for(const m of ms){if(m.type==="attributes")fix(m.target);else m.addedNodes.forEach(n=>{if(n.nodeType===1)all(n)})}}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["placeholder"]})}catch(e){}})();
 
 window.ERPAPP={go,render,save,getDB:()=>DB,setDB:d=>{DB=migrate(d)||DB;UI.pid=DB.projects[0]?DB.projects[0].id:null;render()},makeTemplate,parseTemplate,applyTemplate,migrate};
 if(EMB)document.body.classList.add("embed");
@@ -5113,7 +5113,7 @@ function v17BossPrint(){const w=wrWeek();const act=activeProjects();const pl=rpS
  <div class="kp"><div><small>진행 현장 건수</small><b>${s.sites}</b>개소${d(0,ps.sites,"")}</div><div><small>수행 중 계약금액</small><b>${s.amount}</b>억원${d(0,ps.amount,"억")}</div><div><small>평균 실제공정률</small><b>${s.pct===""?"-":s.pct+"%"}</b>${d(0,ps.pct,"%")}</div><div><small>누적 매출액</small><b>${s.sales}</b>억원${d(0,ps.sales,"억")}</div><div><small>중점 관리 (R·A)</small><b>${s.focus}</b>개소</div></div>
  <h2>현장별 현황 (RAG 순)</h2><table><tr><th>#</th><th>현장</th><th>단계</th><th>계획→실제공정률</th><th>RAG 등급</th><th>현안 (최대 3줄)</th><th>금주 계획</th><th>목표준공</th></tr>${rows||'<tr><td colspan="8">진행 현장 없음</td></tr>'}</table>
  ${dec.length?`<h2>의사결정·회신 필요</h2><table><tr><th>현장</th><th>내용</th><th>마감</th></tr>${dec.map(k=>`<tr><td>${esc(k.projectId?v17pn(k.projectId):"공통")}</td><td>${esc(k.title)}</td><td>${k.due?v17d(k.due):"-"}</td></tr>`).join("")}</table>`:""}
- <div class="mut" style="margin-top:6px;font-size:8pt">RAG: R 지연·위험 / A 주의 / G 정상 · 실제공정률 = 물리적 공사 진행률 (기성 확정 기준) · 누적 매출액 = 기성 세금계산서 기준 (VAT 별도) · 금주 계획은 주간보고 현장별 초안 기준</div></div>`;
+ <div class="mut" style="margin-top:6px;font-size:8pt">RAG: R 지연·위험 / A 주의 / G 정상 · 실제공정률 = ERP 진행률(누적원가÷실행예산) 기본, 직접 입력 시 입력값 · 누적 매출액 = 기성 세금계산서 기준 (VAT 별도) · 금주 계획은 주간보고 현장별 초안 기준</div></div>`;
  v17Print(html,"landscape",`주간현황보고_${w.s.replace(/-/g,"")}`)}
 
 // ===================== 4) 영업 인계 체크리스트 =====================
@@ -7518,7 +7518,7 @@ const TERMS44={h:"용어 기준 (EPC사업부 주간보고 양식)",items:[
  ["누적 수금액","매출 발생분 중 실제 당사 계좌로 입금된 금액의 누계 (VAT 포함)"],
  ["미수금","발행한 세금계산서 중 아직 못 받은 금액 (누적 매출액 − 누적 수금액 기준) · 월간 표에서는 그 달 말 잔액"],
  ["선급금·선수금","매출 발생 전 입금액이라 일반 수금과 구분해 따로 표시"],
- ["실제공정률","물리적 공사 진행률 (예전: 실적공정률). 매출 진행률(누적 매출액 ÷ 계약금액)과 별도로 관리 · 주간보고 표에서 입력, 비우면 기성 공정률"],
+ ["실제공정률","회사 정의 = ERP 진행률(누적원가 ÷ 실행예산, 100% 상한). 진행기준이라 매출 진행률(누적 매출액 ÷ 계약금액)과 같음 · 실제 공정이 다를 때만 주간보고 표에서 직접 입력 · ERP 결산 없으면 기성 공정률"],
  ["계약 전 / 계약방식","계약 전 = 영업·입찰 단계 (예전: 수주 전) · 계약방식 = 입찰·수의계약·직접계약 등 (예전: 수주방식·수주경로)"],
  ["숫자 작성 원칙","중복 표시 가능 · 중복 계산 금지. 매출·수금·미수금은 사업관리팀 실적관리 확정값 하나만 사용"]]};
 const HELP44={
@@ -7679,8 +7679,8 @@ function renderVendors46List(stats){if(!stats){stats={};vendors.forEach(v=>stats
 // ===================== v47: 지표 이름·기준 통일 · 홈 지연 바로 처리 · Task 기한 기본값 =====================
 // 진행 지표 3종을 화면마다 같은 이름·같은 계산으로: 마일스톤(완료 마일스톤 수 비율) · 매출 진행률(ERP 누적매출÷계약) · 공정률(주간보고 실제공정률 수기 → 없으면 기성 공정률)
 function revPct47(p){const e=erpLinkOf(p);if(!e||!Number(e.contract))return null;const c=pfCum(e,"9999-12");return Math.round(c.rev/Number(e.contract)*1000)/10}
-function physPct47(p){const e=erpLinkOf(p);const n=e?parseFloat(String(e.pmActual??"").replace("%","")):NaN;if(isFinite(n))return{v:n,src:"주간보고 수기"};let k=null;try{k=kpiOf(p)}catch(x){}if(k&&k.pct!=null&&!isNaN(k.pct))return{v:Number(k.pct),src:"기성 공정률"};return{v:null,src:"미입력"}}
-const PG47_TIP="마일스톤 = 완료 마일스톤 수 ÷ 전체 · 매출 진행률 = ERP 진행률 (누적원가 ÷ 실행예산 = 누적 진행매출 ÷ 계약금액, 진행기준이라 두 값이 같음) · 공정률 = 주간보고 실제공정률(수기), 없으면 기성 공정률";
+function physPct47(p){const e=erpLinkOf(p);const n=e?parseFloat(String(e.pmActual??"").replace("%","")):NaN;if(isFinite(n))return{v:n,src:"주간보고 수기"};if(e){const c=pfCum(e,"9999-12");if(c.rate>0)return{v:Math.min(100,c.rate),src:"ERP 진행률"}}let k=null;try{k=kpiOf(p)}catch(x){}if(k&&k.pct!=null&&!isNaN(k.pct))return{v:Number(k.pct),src:"기성 공정률"};return{v:null,src:"미입력"}}
+const PG47_TIP="마일스톤 = 완료 마일스톤 수 ÷ 전체 · 매출 진행률 = ERP 진행률 (누적원가 ÷ 실행예산 = 누적 진행매출 ÷ 계약금액, 진행기준이라 두 값이 같음) · 공정률 = ERP 진행률(100% 상한), 주간보고에 직접 입력하면 입력값";
 // 홈 '수행 중 현장' ↔ 주간보고 '진행 현장 건수' 차이를 이름으로 보여줌
 function wkDiff47(act){if(!ERPDB)return"";const W=ERPDB.projects.filter(e=>e.show!==false&&e.countIn!==false);const actE=new Set(act.map(p=>p.erpId).filter(Boolean));const wIds=new Set(W.map(e=>e.id));
  const onlyW=W.filter(e=>!actE.has(e.id)).map(e=>pfNm(e)),onlyH=act.filter(p=>!p.erpId||!wIds.has(p.erpId)).map(p=>pname(p));
@@ -7698,6 +7698,45 @@ function msEdit47(pid,mid,ev){if(ev)ev.stopPropagation();const m=milestones.find
 .hl-tag.re{background:color-mix(in srgb,var(--text-faint) 22%,transparent);color:var(--text-dim)}
 .hl-sep td{background:var(--bg);font-size:12px;color:var(--text-dim);padding:8px 12px!important;cursor:default}
 `;document.head.appendChild(st)})();
+// ===================== v48: EPC사업부 파이프라인 기준 (영업팀 → 사업지원팀 → 사업관리팀) =====================
+// 개발 방향 문서: docs/PIPELINE.md. 단계·담당 팀·인계 기준은 여기 한 곳에서만 정의하고, 새 기능은 아래 함수만 사용 (단계 키 하드코딩 금지)
+// 현재 화면(STAGES)은 계약~O&M만 사용. lead·bid(future)는 영업·사업지원 화면을 열 때 STAGES에 합류
+const TEAM48={
+ sales:{l:"영업팀",d:"사업 발굴·입찰·계약 (모듈영업 포함)"},
+ support:{l:"사업지원팀",d:"제안서·서류, 설계·인허가, 용역사·실행예산 확정 — 착공 전까지"},
+ pm:{l:"사업관리팀",d:"착공 이후 시공·기성·준공·인수인계"},
+ om:{l:"O&M",d:"준공 이후 운영·점검·AS"}};
+// team = 주관 팀, sub = 지원 팀. 인계 시점 = 착공(start)
+const PIPE48=[
+ {k:"lead",l:"발굴·검토",team:"sales",sub:[],future:1},
+ {k:"bid",l:"입찰·제안",team:"sales",sub:["support"],future:1,note:"제안서·입찰 서류는 사업지원팀 작성"},
+ {k:"contract",l:"계약",team:"sales",sub:["support"]},
+ {k:"design",l:"설계",team:"support",sub:[]},
+ {k:"permit",l:"인허가",team:"support",sub:[],note:"현장마다 필요한 인허가가 다름 — 기본 목록에서 '해당없음'으로 제외"},
+ {k:"plan",l:"착공 준비",team:"support",sub:[],note:"공사계획신고 · 용역사 선정 · 실행예산 확정"},
+ {k:"start",l:"착공",team:"pm",sub:[],handover:1},
+ {k:"procure",l:"조달",team:"pm",sub:[]},
+ {k:"build",l:"시공",team:"pm",sub:[]},
+ {k:"inspect",l:"사용전검사·COD",team:"pm",sub:[]},
+ {k:"handover",l:"준공·인수인계",team:"pm",sub:[]},
+ {k:"om",l:"O&M",team:"om",sub:[]}];
+const PIPE_HANDOVER48="start";
+// 수주 결과 (영업 단계 종료 사유 — 종료 처리(CLOSE_REASONS)에 합류 예정)
+const PIPE_RESULT48=["수주","실주","입찰 포기","보류"];
+function pipeIdx48(k){return PIPE48.findIndex(x=>x.k===k)}
+function stageTeam48(k){const s=PIPE48.find(x=>x.k===k);return s?s.team:""}
+function teamOf48(p){return p?stageTeam48(p.stage):""}
+function teamLabel48(t){return(TEAM48[t]||{}).l||""}
+function isPmScope48(p){return!!p&&pipeIdx48(p.stage)>=pipeIdx48(PIPE_HANDOVER48)&&p.stage!=="om"}
+function isPreStart48(p){return!!p&&pipeIdx48(p.stage)>=0&&pipeIdx48(p.stage)<pipeIdx48(PIPE_HANDOVER48)}
+// 인계 전 확인: 막지 않고 빠진 것만 알려줌 (현장마다 조건이 달라서)
+function handoverGaps48(p){if(!p)return[];const g=[];const e=typeof erpLinkOf==="function"?erpLinkOf(p):null;
+ const hasSub=(typeof subs!=="undefined"&&subs.some(x=>x.projectId===p.id))||!!p.vendor;if(!hasSub)g.push("용역사(하도급사) 미등록");
+ const bOk=(p.budget&&p.budget.status==="승인")||(e&&Number(e.budget)>0);if(!bOk)g.push("실행예산 미확정");
+ const pre=milestones.filter(m=>m.projectId===p.id&&isPreStart48({stage:m.stage})&&m.status!=="완료"&&m.status!=="해당없음");if(pre.length)g.push(`착공 전 마일스톤 미완료 ${pre.length}건 (${pre.slice(0,3).map(m=>m.name).join(", ")}${pre.length>3?" 외":""})`);
+ return g}
+// 마일스톤 템플릿 항목의 담당 팀 = 항목 stage의 주관 팀 (템플릿 데이터는 그대로, 팀은 계산)
+function tplTeam48(item){return stageTeam48(item&&item.stage)||"pm"}
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();applyTheme();applySecs();renderAll();
