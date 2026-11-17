@@ -7680,7 +7680,7 @@ function renderVendors46List(stats){if(!stats){stats={};vendors.forEach(v=>stats
 // 진행 지표 3종을 화면마다 같은 이름·같은 계산으로: 마일스톤(완료 마일스톤 수 비율) · 매출 진행률(ERP 누적매출÷계약) · 공정률(주간보고 실제공정률 수기 → 없으면 기성 공정률)
 function revPct47(p){const e=erpLinkOf(p);if(!e||!Number(e.contract))return null;const c=pfCum(e,"9999-12");return Math.round(c.rev/Number(e.contract)*1000)/10}
 function physPct47(p){const e=erpLinkOf(p);const n=e?parseFloat(String(e.pmActual??"").replace("%","")):NaN;if(isFinite(n))return{v:n,src:"주간보고 수기"};let k=null;try{k=kpiOf(p)}catch(x){}if(k&&k.pct!=null&&!isNaN(k.pct))return{v:Number(k.pct),src:"기성 공정률"};return{v:null,src:"미입력"}}
-const PG47_TIP="마일스톤 = 완료 마일스톤 수 ÷ 전체 · 매출 진행률 = ERP 누적 진행매출 ÷ 계약금액 · 공정률 = 주간보고 실제공정률(수기), 없으면 기성 공정률";
+const PG47_TIP="마일스톤 = 완료 마일스톤 수 ÷ 전체 · 매출 진행률 = ERP 진행률 (누적원가 ÷ 실행예산 = 누적 진행매출 ÷ 계약금액, 진행기준이라 두 값이 같음) · 공정률 = 주간보고 실제공정률(수기), 없으면 기성 공정률";
 // 홈 '수행 중 현장' ↔ 주간보고 '진행 현장 건수' 차이를 이름으로 보여줌
 function wkDiff47(act){if(!ERPDB)return"";const W=ERPDB.projects.filter(e=>e.show!==false&&e.countIn!==false);const actE=new Set(act.map(p=>p.erpId).filter(Boolean));const wIds=new Set(W.map(e=>e.id));
  const onlyW=W.filter(e=>!actE.has(e.id)).map(e=>pfNm(e)),onlyH=act.filter(p=>!p.erpId||!wIds.has(p.erpId)).map(p=>pname(p));
