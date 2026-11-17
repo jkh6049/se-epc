@@ -4429,7 +4429,7 @@ body{font-family:${getComputedStyle(document.body).fontFamily}!important;font-si
 @media print{.dsec{overflow:visible}}`}
 const _ensureUx=erpEnsureFrame;erpEnsureFrame=function(){const pr=_ensureUx();pr.then(a=>{if(a)erpSkin()});return pr};
 // 인쇄·PDF는 항상 화이트 (2026-11-11): 다크 모드에서도 인쇄 순간만 라이트로 바꿨다가 복원
-(function(){let prev=null,fp=null;addEventListener("beforeprint",()=>{const H=document.documentElement;if(H.getAttribute("data-theme")==="dark"){prev="dark";H.setAttribute("data-theme","light")}
+(function(){let prev=null,fp=null;addEventListener("beforeprint",()=>{if(document.body.classList.contains("ps-noflip"))return;const H=document.documentElement;if(H.getAttribute("data-theme")==="dark"){prev="dark";H.setAttribute("data-theme","light")}
  const f=$("erpFrame"),d=f&&f.contentDocument;if(d&&d.documentElement.dataset.theme==="dark"){fp="dark";d.documentElement.dataset.theme="light"}});
  addEventListener("afterprint",()=>{if(prev){document.documentElement.setAttribute("data-theme",prev);prev=null}const f=$("erpFrame"),d=f&&f.contentDocument;if(fp&&d){d.documentElement.dataset.theme=fp;fp=null}})})();
 const _toggleThemeUx=toggleTheme;toggleTheme=function(){_toggleThemeUx();setTimeout(erpSkin,50)};
@@ -7822,6 +7822,43 @@ function pp50Xlsx(){if(typeof XLSX==="undefined"){alert("엑셀 라이브러리 
 // 보고서·엑셀 목록에 카드 추가 (기존 카드는 그대로)
 {const _rx50=renderRptx;renderRptx=function(){_rx50.apply(this,arguments);try{const g=document.querySelector("#tab-rptx .rx-g");if(!g||g.querySelector(".pp50c"))return;
  g.insertAdjacentHTML("beforeend",`<div class="rx-c pp50c"><div class="rx-h"><span class="rx-i">⇶</span><b>사업부 파이프라인 요약</b><span class="rx-f">PDF 1장 · 엑셀 4시트</span></div><div class="rx-w">수시 · 팀장·경영진 공유</div><div class="rx-d">영업 → 사업지원 → 사업관리 → O&M 단계별 현장·계약 · 현장별 진행률·마진 · 확인 필요(지연·선정 대기·인계 준비·미수) · 회사 양식과 별개</div><div class="rx-b"><button class="btn btn-sm" onclick="event.stopPropagation();pp50Pdf()">PDF 만들기</button><button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();pp50Xlsx()">엑셀 받기</button></div></div>`)}catch(e){console.error("[v50]",e)}}}
+// ===================== v51: 사업부 파이프라인 화면 + PDF 한 장 맞춤 =====================
+// 화면 = 보고서·엑셀 › 사업부 파이프라인 (switchTab('pipe')). PDF·엑셀은 같은 데이터(pp50Data)
+let pp51T="all",pp51S="";
+function renderPipe51(){const el=$("tab-pipe");if(!el)return;const D=pp50Data(),k=D.k;const E=v=>(Number(v||0)/1e8).toFixed(1)+"억";const pc=v=>v==null?'<span class="hint">-</span>':Math.round(v)+"%";
+ const tc={sales:"#b26a00",support:"#7c3aed",pm:"#2f6fed",om:"#0f8a7e"};
+ const rows=D.rows.filter(r=>(pp51T==="all"||r.team===pp51T)&&(!pp51S||r.stage===pp51S));
+ const K=(l,v,s,c)=>`<div class="sk24 ${c||"s-info"}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+ const kpi=`<div class="sk24g" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin:0 0 12px">${K("수행 중 계약",E(k.C),`${k.n}개 현장`)}${K("누적 진행매출",E(k.rev),`진행률(회계) ${k.rate.toFixed(1)}%`)}${K("계약잔액",E(k.back),"향후 매출 실현 잔여")}${K("미수금",E(k.ar),"채권 발행 − 수금 (VAT 포함)",k.ar>0?"s-warn":"s-good")}${K("계획 마진",k.margin==null?"-":k.margin.toFixed(1)+"%","(계약 − 실행예산) ÷ 계약")}${K("확인 필요",D.checks.length+"건","지연·재계획·선정 대기·인계 준비·미수",D.checks.length?"s-bad":"s-good")}</div>`;
+ const flow=`<div class="pf-box" style="margin-bottom:12px"><h4>단계별 현장 <span class="hint" style="font-weight:400">누르면 아래 표를 그 단계만 · 색 = 담당 팀 · 발굴·입찰은 영업 화면 개설 후 집계</span></h4><div class="pp51-flow">${D.stages.map(s=>`<button class="pp51-st ${pp51S===s.k?"on":""} ${s.future?"fu":""}" style="--c:${tc[s.team]}" ${s.future?"disabled":`onclick="pp51S=pp51S==='${s.k}'?'':'${s.k}';renderPipe51()"`}><span>${esc(s.l)}</span><b>${s.future?"–":s.n}</b><i>${teamLabel48(s.team)}</i></button>`).join("")}</div></div>`;
+ const teams=`<div class="pp51-tm">${[{k:"all",l:"전체",n:D.rows.length,C:k.C},...D.teams].map(t=>`<button class="pp51-t ${pp51T===t.k?"on":""}" style="--c:${tc[t.k]||"var(--accent)"}" onclick="pp51T='${t.k}';renderPipe51()"><span>${t.l}</span><b>${t.n}곳</b><em>${E(t.C)}</em></button>`).join("")}</div>`;
+ const tbl=`<div class="pf-box" style="overflow-x:auto"><h4>현장별 현황 <span class="hint" style="font-weight:400">${rows.length}곳${pp51S?` · ${esc(stageName(pp51S))} 단계만 <a href="javascript:void 0" onclick="pp51S='';renderPipe51()">해제</a>`:""} · 행을 누르면 현장 상세</span></h4><table class="pf-t pp51-tbl" style="margin-top:8px"><thead><tr><th style="text-align:left">현장</th><th>담당 팀</th><th>단계</th><th>계약</th><th title="ERP 진행매출 ÷ 계약금액">진행률(회계)</th><th title="물리적 공사 진행률 (주간보고 실제공정률)">공정률</th><th title="완료 마일스톤 ÷ 전체">마일스톤</th><th>계획 마진</th><th>준공기한</th><th style="text-align:left">다음 마일스톤</th><th>확인</th></tr></thead><tbody>${rows.map(r=>{const ck=D.checks.filter(c=>c.r===r);return`<tr class="clk" onclick="openDetail('${r.p.id}')"><td style="text-align:left"><b>${esc(r.name)}</b><div class="hint">${esc(r.client)}</div></td><td><span class="pp51-tag" style="--c:${tc[r.team]}">${esc(r.teamL)}</span></td><td>${esc(r.stageL)}</td><td class="n">${E(r.C)}</td><td class="n">${pc(r.acct)}</td><td class="n">${pc(r.rate)}</td><td class="n">${r.mile}%</td><td class="n">${r.margin==null?"-":r.margin.toFixed(1)+"%"}</td><td class="n">${r.deadline||"-"}</td><td style="text-align:left">${esc(r.next||"-")}${r.nextD?` <span class="hint">${r.nextD.slice(5)}</span>`:""}</td><td>${ck.length?`<span class="${ck.some(c=>["지연","미수"].includes(c.tag))?"delay":"soon"}">${ck.length}</span>`:'<span class="hint">-</span>'}</td></tr>`}).join("")||'<tr><td colspan="11" class="hint">조건에 맞는 현장 없음</td></tr>'}</tbody></table></div>`;
+ const chk=D.checks.filter(c=>rows.includes(c.r));const tabOf=t=>t==="선정 대기"?"sites":t==="미수"?"bill":"ms";
+ const side=`<div class="pf-box"><h4>확인 필요 <span class="hint" style="font-weight:400">${chk.length}건 · 누르면 해당 화면</span></h4>${chk.map(c=>`<div class="pf-al" onclick="openDetail('${c.r.p.id}','${tabOf(c.tag)}')"><span class="hl-tag ${["지연","미수"].includes(c.tag)?"r":"a"}">${c.tag}</span><span><b>${esc(c.r.name)}</b> — ${esc(c.t)}</span></div>`).join("")||'<div class="hint" style="padding:8px 0">없음</div>'}</div>`;
+ el.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="hint">영업 → 사업지원 → 사업관리 → O&M · 대시보드 수행 중 현장 기준 · 금액은 실적관리(ERP) · 회사 양식과 별개</span><span style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-sm" onclick="pp50Pdf()">PDF 만들기 (A4 가로 1장)</button><button class="btn btn-sm btn-secondary" onclick="pp50Xlsx()">엑셀 받기</button></span></div>${kpi}${flow}${teams}<div class="pp51-g">${tbl}${side}</div>`}
+// 화면 연결: 보고서·엑셀 묶음에 넣고 카드 누르면 화면
+TAB_TITLE.pipe=["사업부 파이프라인","영업 → 사업지원 → 사업관리 → O&M 단계별 현장 · PDF·엑셀"];
+if(typeof SEG19==="object"&&!SEG19.rptx.items.some(x=>x[0]==="pipe"))SEG19.rptx.items.splice(1,0,["pipe","사업부 파이프라인","단계별 현장·계약 · 현장별 진행률·마진 · 확인 필요 · PDF(A4 가로 1장)·엑셀"]);
+{const te=$("tab-erp");if(te&&!$("tab-pipe"))te.insertAdjacentHTML("afterend",'<div id="tab-pipe" style="display:none"></div>')}
+{const _st51=switchTab;switchTab=function(n){const e=$("tab-pipe");if(e)e.style.display="none";const r=_st51.apply(this,arguments);if(n==="pipe"&&e){e.style.display="block";renderPipe51()}return r}}
+{const _ra51=renderAll;renderAll=function(){const r=_ra51.apply(this,arguments);try{if(curTab==="pipe"&&$("tab-pipe")&&$("tab-pipe").style.display!=="none")renderPipe51()}catch(e){}return r}}
+{const _rx51=renderRptx;renderRptx=function(){_rx51.apply(this,arguments);const c=document.querySelector("#tab-rptx .pp50c");if(c&&!c.classList.contains("go")){c.classList.add("go");c.setAttribute("onclick","switchTab('pipe')");c.title="눌러서 화면 열기";const b=c.querySelector(".rx-b");if(b)b.insertAdjacentHTML("beforeend",'<span class="rx-go">화면 열기 →</span>')}}}
+// PDF: A4 가로 한 장에 맞춰 축소 · 인쇄 중 화면 테마는 그대로 (출력물은 자체 흰 바탕)
+pp50Pdf=function(){const html=pp50Html();const m=document.createElement("div");m.style.cssText="position:absolute;left:-99999px;top:0;width:277mm";m.innerHTML=html+'<div class="pp51mm" style="height:190mm"></div>';document.body.appendChild(m);
+ const h=m.querySelector(".pp50").getBoundingClientRect().height,lim=m.querySelector(".pp51mm").getBoundingClientRect().height;m.remove();const z=h>lim?Math.floor(lim/h*1000)/1000:1;
+ document.body.classList.add("ps-noflip");const off=()=>{document.body.classList.remove("ps-noflip");removeEventListener("afterprint",off)};addEventListener("afterprint",off);setTimeout(off,3000);
+ v17Print(`<div style="zoom:${z}">${html}</div>`,"landscape","EPC사업부 파이프라인 요약 "+todayStr())};
+(()=>{const st=document.createElement("style");st.textContent=`
+.pp51-flow{display:flex;gap:4px;overflow-x:auto;padding-top:6px}
+.pp51-st{flex:1 0 82px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:1px solid var(--border);border-top:3px solid var(--c);border-radius:8px;background:var(--bg-elev);color:var(--text-dim);font:inherit;font-size:12px;cursor:pointer}
+.pp51-st b{font-size:20px;color:var(--text)}.pp51-st i{font-style:normal;font-size:10.5px;color:var(--c)}.pp51-st.on{background:color-mix(in srgb,var(--c) 14%,var(--bg-elev));border-color:var(--c)}.pp51-st.fu{opacity:.45;cursor:default}
+.pp51-tm{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.pp51-t{display:flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--border-strong);border-left:4px solid var(--c);border-radius:8px;background:var(--bg-elev);color:var(--text-dim);font:inherit;font-size:13px;cursor:pointer}
+.pp51-t b{color:var(--text);font-size:15px}.pp51-t em{font-style:normal;font-size:12px}.pp51-t.on{background:color-mix(in srgb,var(--c) 14%,var(--bg-elev));border-color:var(--c);color:var(--text)}
+.pp51-tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:9px;border:1px solid var(--c);color:var(--c);white-space:nowrap}
+.pp51-g{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(260px,1fr);gap:12px;align-items:start}
+@media(max-width:1100px){.pp51-g{grid-template-columns:1fr}}
+`;document.head.appendChild(st)})();
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();
