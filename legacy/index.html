@@ -1536,14 +1536,16 @@ function gross45(p,bills,D,contract){const r=advRate45(p,bills,contract);const m
  (bills||[]).filter(b=>b.date&&b.date<=D&&bkind45(p,b)!=="선급").sort((a,b)=>a.date<b.date?-1:1).forEach(b=>{let adj=0;if(r>0&&r<1&&A>0&&b.amt>0){adj=Math.min(Math.round(b.amt/(1-r))-b.amt,A);A-=adj}m[b.key]={adj,gross:b.amt+adj}});return{m,r,used:A0-A,left:A}}
 function sales45(p,bills,D,M,contract){let cum=0,cur=0,coll=0,collM=0,ar=0,advB=0,advIn=0;const iss=[],cd=[];const G=gross45(p,bills,D,contract);
  for(const b of bills||[]){if(!b.date||b.date>D)continue;const paid=(b.events||[]).filter(e=>e.date<=D);const pAmt=paid.reduce((t,e)=>t+e.amt,0);
-  if(bkind45(p,b)==="선급"){advB+=b.amt;advIn+=pAmt;continue}
+  const adv45=bkind45(p,b)==="선급";if(adv45){advB+=b.amt;advIn+=pAmt}
+  // v58: 수금·미수금 = 선급금 포함 (팀장 지시 26.11.17 — 선급금 특별 취급 안 함) · 매출(계산서 매출)은 기성만
+  coll+=pAmt;ar+=Math.max(0,b.amt-pAmt);paid.forEach(e=>{if(e.date.slice(0,7)===M){collM+=e.amt;if(!cd.includes(e.date))cd.push(e.date)}});if(adv45)continue;
   const net=Math.round(((G.m[b.key]||{}).gross||b.amt)/VAT45);cum+=net;if(b.date.slice(0,7)===M){cur+=net;if(!iss.includes(b.date))iss.push(b.date)}
-  coll+=pAmt;ar+=Math.max(0,b.amt-pAmt);paid.forEach(e=>{if(e.date.slice(0,7)===M){collM+=e.amt;if(!cd.includes(e.date))cd.push(e.date)}})}
+ }
  return{salesCum:cum,salesCur:cur,salesPrev:cum-cur,salesBack:contract-cum,sColl:coll,sCollMonth:collM,sAr:ar,advBilled:advB,advIn,advRate:G.r,advUsed:G.used,advLeft:G.left,g45:G.m,sIssueDates:iss.sort(),sCollDates:cd.sort()}}
 // 그 달 말일(이번 달은 기준일)까지 발행한 기성 계산서 누계 (VAT 별도)
 function salesAt45(c,ym){const L=limOf(c,ym);return c.bills.reduce((t,b)=>b.date&&b.date<=L&&bkind45(c.p,b)!=="선급"?t+Math.round(((c.g45[b.key]||{}).gross||b.amt)/VAT45):t,0)}
 // 그 달 말일까지 발행한 기성 계산서 중 기준일 현재 못 받은 금액 (VAT 포함)
-function arAt45(c,ym){const L=limOf(c,ym);return c.bills.reduce((t,b)=>{if(!b.date||b.date>L||bkind45(c.p,b)==="선급")return t;const paid=(b.events||[]).filter(e=>e.date<=c.D).reduce((x,e)=>x+e.amt,0);return t+Math.max(0,b.amt-paid)},0)}
+function arAt45(c,ym){const L=limOf(c,ym);return c.bills.reduce((t,b)=>{if(!b.date||b.date>L)return t;const paid=(b.events||[]).filter(e=>e.date<=c.D).reduce((x,e)=>x+e.amt,0);return t+Math.max(0,b.amt-paid)},0)}
 function revCumAt(c,ym){let v=0;for(const r of c.months){if(r.ym<=ym)v=r.revCum;else break}return v}
 function limOf(c,ym){return ym===c.M?c.D:ymEnd(ym)}
 function collAt(c,ym,exact){const L=limOf(c,ym);let t=0;for(const e of c.events){if(e.date>L)continue;if(!exact||e.date.slice(0,7)===ym)t+=e.amt}return t}
@@ -1613,7 +1615,7 @@ function buildReport(projects,D,opt){
  // v45: 월간 누적 실적 = 주간보고 양식 기준 (기성 세금계산서, 계약된 프로젝트만)
  cols.forEach((ym,i)=>{if(ym>M)return;let r=0,pl=0,co=0,ar=0,bk=0;
   for(const c of list){const L=limOf(c,ym),gp=(c.gp||0)/100;
-   for(const b of c.bills){if(!b.date||b.date>c.D||bkind45(c.p,b)==="선급")continue;if(b.date.slice(0,7)===ym){const n=Math.round(((c.g45[b.key]||{}).gross||b.amt)/VAT45);r+=n;pl+=n*gp}(b.events||[]).forEach(e=>{if(e.date<=c.D&&e.date.slice(0,7)===ym)co+=e.amt})}
+   for(const b of c.bills){if(!b.date||b.date>c.D)continue;(b.events||[]).forEach(e=>{if(e.date<=c.D&&e.date.slice(0,7)===ym)co+=e.amt});if(bkind45(c.p,b)==="선급")continue;if(b.date.slice(0,7)===ym){const n=Math.round(((c.g45[b.key]||{}).gross||b.amt)/VAT45);r+=n;pl+=n*gp}}
    ar+=arAt45(c,ym);const cd=s(c.p.contractDate);if(cd&&cd<=L)bk+=c.contract-salesAt45(c,ym)}
   if(ym===M){let pc=0,has=0;for(const c of list){const v=planIn(c,ym);if(v){pc+=v;has=1}}if(has)co=Math.max(co,pc)}
   mon.rev[i]=r;mon.pl[i]=pl;mon.coll[i]=co;mon.ar[i]=ar;mon.backlog[i]=bk});
@@ -1765,19 +1767,21 @@ function rWeekly(){
  notesHtml("notes7","현장관리 활동",[["fPrev","전주",w.pm,w.pf],["fCur","금주",w.mon,w.fri]])+`</div>`;
  // 8p (v58: 실적관리 표는 맨 아래 — 진행현황 → 진행매출(회계) → 월간 누적 실적 → 실적관리)
  const h0=h;h="";
- h+=`<div class="card"><div class="card-h"><div><h2>실적관리 — 계약 후 매출발생 시작 현장 기준 (${UN()})</h2><div class="desc">매출 = 진행매출 (원가투입법: 공정률(누적원가 ÷ 실행예산) × 계약금액 · 구분손익 올린 달은 재무 숫자 · VAT 별도) · 기 매출총액 = ${mm}월 이전 누적 (전년 이월 포함) · 매출액 = ${mm}월 진행매출${R.list.some(c=>c.st==="추정")?" (ERP 미마감 현장은 "+MD(w.cutoff)+"까지 전표 기준 추정)":""} · 누적 매출액 = 기 매출총액 + 매출액 · 계약 잔액 = 계약금액 − 누적 매출액 · 계산서발행일·수금·미수금 = 기성 세금계산서 기준 (VAT 포함) · 선급금·계산서 매출은 회색 참고 열 · 누적 매출액을 누르면 산출 근거 · 범위·기타 계정 = 맨 위 열람 프로젝트 바</div></div><div class="acts"><button class="btn s p" onclick="pptImg('perf')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('perf')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
- <div class="scroll"><table class="t" id="t8"><thead><tr><th rowspan="2">번호</th><th rowspan="2">고객/발주처</th><th rowspan="2">현장명</th><th rowspan="2">계약금액</th><th rowspan="2">기 매출총액</th><th colspan="4">매출</th><th colspan="4">수금</th><th rowspan="2">기타</th><th rowspan="2" class="ref" title="선급금 계산서 입금 누계 (VAT 포함) · 매출 전 입금이라 수금과 따로 표시">선급금<br>수령</th><th rowspan="2" class="ref" title="기성 세금계산서 매출 누계 (선급금 제외 · VAT 별도) · 누적 매출액(진행매출)과의 차이 = 미청구공사">계산서<br>매출 누적</th><th rowspan="2" class="ref">전주 대비<br>누적 매출액</th></tr><tr><th>계산서발행일</th><th>매출액</th><th>누적 매출액</th><th>계약 잔액</th><th>수금일</th><th>수금액</th><th>누적 수금액</th><th>미수금</th></tr></thead><tbody>`;
+ h+=`<div class="card"><div class="card-h"><div><h2>실적관리 — 계약 후 매출발생 시작 현장 기준 (${UN()})</h2><div class="desc">매출 = 진행매출 (원가투입법: 공정률(누적원가 ÷ 실행예산) × 계약금액 · 구분손익 올린 달은 재무 숫자 · VAT 별도) · 기 매출총액 = ${mm}월 이전 누적 (전년 이월 포함) · 매출액 = ${mm}월 진행매출${R.list.some(c=>c.st==="추정")?" (ERP 미마감 현장은 "+MD(w.cutoff)+"까지 전표 기준 추정)":""} · 누적 매출액 = 기 매출총액 + 매출액 · 계약 잔액 = 계약금액 − 누적 매출액 · 계산서발행일 = 기성 세금계산서 · 수금·미수금 = 선급금 포함 입금 기준 (VAT 포함) · 계산서 매출은 회색 참고 열 · 누적 매출액·수금액을 누르면 내역 · 범위·기타 계정 = 맨 위 열람 프로젝트 바</div></div><div class="acts"><button class="btn s p" onclick="pptImg('perf')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('perf')" title="데이터 칸만 복사 — PPT 표의 첫 데이터 칸(번호 1)을 선택 후 붙여넣기">값만 복사</button></div></div>
+ <div class="scroll"><table class="t" id="t8"><thead><tr><th rowspan="2">번호</th><th rowspan="2">고객/발주처</th><th rowspan="2">현장명</th><th rowspan="2">계약금액</th><th rowspan="2">기 매출총액</th><th colspan="4">매출</th><th colspan="4">수금</th><th rowspan="2">기타</th><th rowspan="2" class="ref" title="기성 세금계산서 매출 누계 (선급금 제외 · VAT 별도) · 누적 매출액(진행매출)과의 차이 = 미청구공사">계산서<br>매출 누적</th><th rowspan="2" class="ref">전주 대비<br>누적 매출액</th></tr><tr><th>계산서발행일</th><th>매출액</th><th>누적 매출액</th><th>계약 잔액</th><th>수금일</th><th>수금액</th><th>누적 수금액</th><th>미수금</th></tr></thead><tbody>`;
  const S={c:0,pv:0,cu:0,cm:0,bk:0,mc:0,cc:0,ar:0,ad:0,rv:0};
  R.list.forEach((c,i)=>{const p=c.p;S.c+=c.contract;S.pv+=c.salesPrev;S.cu+=c.salesCur;S.cm+=c.salesCum;S.bk+=c.salesBack;S.mc+=c.sCollMonth;S.cc+=c.sColl;S.ar+=c.sAr;S.ad+=c.advIn;S.rv+=c.revCum;
   const pr=ps&&ps.rows&&ps.rows[p.id];const dv=pr&&pr.poc!=null?c.salesCum-pr.poc:null;S.iv=(S.iv||0)+c.inv.salesCum;
-  h+=`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${U(c.salesPrev,1)}</td><td class="c">${c.sIssueDates.map(MD).join(", ")}</td><td class="n">${U(c.salesCur,1)}</td><td class="n click" onclick="showBasis('${p.id}')" title="눌러서 진행매출 산출 근거">${U(c.salesCum,1)}</td><td class="n">${U(c.salesBack)}</td><td class="c">${c.sCollDates.map(MD).join(", ")}</td><td class="n">${U(c.sCollMonth,1)}</td><td class="n">${U(c.sColl,1)}</td><td class="n">${U(c.sAr,1)}</td><td data-copy="${esc(p.memo)}"><input class="ci" value="${esc(p.memo)}" onchange="setPF('${p.id}','memo',this.value,1)" placeholder="—"></td><td class="n ref">${U(c.advIn,1)}</td><td class="n ref" title="클릭: 세금계산서 내역" style="cursor:pointer" onclick="showSales45('${p.id}')">${U(c.inv.salesCum,1)}</td><td class="n ref">${dv==null?"—":(dv>=0?"+":"")+U(dv)}</td></tr>`});
- h+=`<tr class="sum"><td></td><td></td><td title="선택 프로젝트 합계 (진행매출 기준 · 기타 계정 매출은 월간 누적 실적·진행매출 표에만)">합계</td><td class="n">${U(S.c)}</td><td class="n">${U(S.pv,1)}</td><td></td><td class="n">${U(S.cu,1)}</td><td class="n">${U(S.cm,1)}</td><td class="n">${U(S.bk)}</td><td></td><td class="n">${U(S.mc,1)}</td><td class="n">${U(S.cc,1)}</td><td class="n">${U(S.ar,1)}</td><td></td><td class="n ref">${U(S.ad,1)}</td><td class="n ref">${U(S.iv,1)}</td><td class="ref"></td></tr></tbody></table></div></div>`;
+  h+=`<tr><td class="c">${i+1}</td><td>${esc(p.client)}</td><td>${esc(NM(p))}</td><td class="n">${U(c.contract)}</td><td class="n">${U(c.salesPrev,1)}</td><td class="c">${c.sIssueDates.map(MD).join(", ")}</td><td class="n">${U(c.salesCur,1)}</td><td class="n click" onclick="showBasis('${p.id}')" title="눌러서 진행매출 산출 근거">${U(c.salesCum,1)}</td><td class="n">${U(c.salesBack)}</td><td class="c">${c.sCollDates.map(MD).join(", ")}</td><td class="n${c.sCollMonth?" click":""}" ${c.sCollMonth?`onclick="det58('coll','${R.M}','${p.id}')" title="눌러서 입금 내역"`:""}>${U(c.sCollMonth,1)}</td><td class="n${c.sColl?" click":""}" ${c.sColl?`onclick="det58('collp','','${p.id}')" title="눌러서 입금 내역"`:""}>${U(c.sColl,1)}</td><td class="n">${U(c.sAr,1)}</td><td data-copy="${esc(p.memo)}"><input class="ci" value="${esc(p.memo)}" onchange="setPF('${p.id}','memo',this.value,1)" placeholder="—"></td><td class="n ref" title="클릭: 세금계산서 내역" style="cursor:pointer" onclick="showSales45('${p.id}')">${U(c.inv.salesCum,1)}</td><td class="n ref">${dv==null?"—":(dv>=0?"+":"")+U(dv)}</td></tr>`});
+ h+=`<tr class="sum"><td></td><td></td><td title="선택 프로젝트 합계 (진행매출 기준 · 기타 계정 매출은 월간 누적 실적·진행매출 표에만)">합계</td><td class="n">${U(S.c)}</td><td class="n">${U(S.pv,1)}</td><td></td><td class="n">${U(S.cu,1)}</td><td class="n">${U(S.cm,1)}</td><td class="n">${U(S.bk)}</td><td></td><td class="n">${U(S.mc,1)}</td><td class="n">${U(S.cc,1)}</td><td class="n">${U(S.ar,1)}</td><td></td><td class="n ref">${U(S.iv,1)}</td><td class="ref"></td></tr></tbody></table></div></div>`;
  const h8=h;h=h0+yearPerf(R,est.length>0);
  const lab=R.cols.map(ym=>{const m=+ym.slice(5);return ym<R.M?m+"월":ym===R.M?m+"월"+(est.length?"(예상)":""):m+"월(예상)"});
- const rowM=(nm,k,tip)=>`<tr><td${tip?` title="${tip}"`:""}>${nm}</td><td class="n cy">${R.carry[k]==null?"":U(R.carry[k],1)}</td>${R.mon[k].map((v,i)=>k==="ar"&&v?`<td class="n click" onclick="showAR40('${R.cols[i]}')" title="눌러서 구성 보기">${U(v,1)}</td>`:`<td class="n">${v==null?"":U(v,1)}</td>`).join("")}<td class="n yt"><b>${U(R.tot[k],1)}</b></td><td class="n"><b>${U(R.all[k],1)}</b></td></tr>`;
- h+=`<style>#t8m td.cy,#t8m th.cy{background:var(--th);border-right:1.5px solid var(--grid2)}#t8m td.yt,#t8m th.yt{border-left:1.5px solid var(--grid2)}</style><div class="card"><div class="card-h"><div><h2>월간 누적 실적 (${UN()})</h2><div class="desc">전년이월 = ${+R.M.slice(0,4)-1}년 말에 넘어온 잔액 (계약 = 이월 계약잔액 · 미수금 · 계약잔액) · 계약 = 신규 계약체결액 (계약일이 속한 달) · 매출 = 진행매출 (원가투입법 · 구분손익 올린 달은 재무 숫자${R.act.etc?" · 기타 계정 포함":" · 기타 계정 제외"}) · 매출이익 = 진행매출 − 매출원가 · 수금 = 실제 입금만 (기성 계산서 · 선급금 제외 · ${mm}월은 ${MD(w.cutoff)}까지) — 자금계획 수금 예정액은 회색 '수금 예정' 줄 (누적·PPT 제외) · 미수금 = 그 달까지 발행한 계산서 중 ${MD(w.cutoff)} 현재 못 받은 금액 · 계약잔액 = 계약금액 − 누적 진행매출 (전년 이월 포함 · 기타 계정 제외) · 당해연도 누적 = 1~12월 합계 · 프로젝트 총누적 = 전년이월 잔액 + 당해연도 누적 (계약 = 이월 계약잔액 + 신규 계약 = 올해 수행 대상 · 매출·이익·수금 = 전년까지 누계 + 당해연도, 전년이월 열에는 잔액만 표시) · 미수금·계약잔액: 월별 칸 = 그 달 말 잔액, 당해연도 누적 = 올해 증감, 프로젝트 총누적 = 현재 잔액 (${mm}월 = ${MD(w.cutoff)} 기준)</div></div><div class="acts"><button class="btn s p" onclick="pptImg('mon')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('mon')" title="데이터 칸만 복사 — PPT 표의 '계약' 행 1월 칸을 선택 후 붙여넣기">값만 복사</button></div></div>
+ // v58: 칸을 누르면 내역 — 계약·매출·매출이익·수금·계약잔액 = det58, 미수금 = showAR40 · 전년이월 칸 = 현장별 전년까지 내역
+ const DK={order:"order",rev:"rev",pl:"rev",coll:"coll",backlog:"backlog",ar:"ar"};
+ const rowM=(nm,k,tip)=>`<tr><td${tip?` title="${tip}"`:""}>${nm}</td>${R.carry[k]?`<td class="n cy click" onclick="det58('${DK[k]}','prior')" title="눌러서 현장별 전년이월 내역">${U(R.carry[k],1)}</td>`:`<td class="n cy">${R.carry[k]==null?"":U(R.carry[k],1)}</td>`}${R.mon[k].map((v,i)=>k==="ar"&&v?`<td class="n click" onclick="showAR40('${R.cols[i]}')" title="눌러서 구성 보기">${U(v,1)}</td>`:v&&DK[k]?`<td class="n click" onclick="det58('${DK[k]}','${R.cols[i]}')" title="눌러서 내역">${U(v,1)}</td>`:`<td class="n">${v==null?"":U(v,1)}</td>`).join("")}<td class="n yt"><b>${U(R.tot[k],1)}</b></td><td class="n"><b>${U(R.all[k],1)}</b></td></tr>`;
+ h+=`<style>#t8m td.cy,#t8m th.cy{background:var(--th);border-right:1.5px solid var(--grid2)}#t8m td.yt,#t8m th.yt{border-left:1.5px solid var(--grid2)}</style><div class="card"><div class="card-h"><div><h2>월간 누적 실적 (${UN()})</h2><div class="desc">전년이월 = ${+R.M.slice(0,4)-1}년까지 (계약·미수금·계약잔액 = 넘어온 잔액 · 매출·매출이익·수금 = 전년까지 누계) · 계약 = 신규 계약체결액 (계약일이 속한 달) · 매출 = 진행매출 (원가투입법 · 구분손익 올린 달은 재무 숫자${R.act.etc?" · 기타 계정 포함":" · 기타 계정 제외"}) · 매출이익 = 진행매출 − 매출원가 · 수금 = 실제 입금 (선급금 포함 · ${mm}월은 ${MD(w.cutoff)}까지) — 자금계획 수금 예정액은 회색 '수금 예정' 줄 (누적·PPT 제외) · 칸을 누르면 내역 · 미수금 = 그 달까지 발행한 계산서 중 ${MD(w.cutoff)} 현재 못 받은 금액 · 계약잔액 = 계약금액 − 누적 진행매출 (전년 이월 포함 · 기타 계정 제외) · 당해연도 누적 = 1~12월 합계 · 프로젝트 총누적 = 전년이월 + 당해연도 누적 (계약 = 이월 계약잔액 + 신규 계약 = 올해 수행 대상 · 매출·매출이익·수금의 전년이월 = 전년까지 누계) · 미수금·계약잔액: 월별 칸 = 그 달 말 잔액, 당해연도 누적 = 올해 증감, 프로젝트 총누적 = 현재 잔액 (${mm}월 = ${MD(w.cutoff)} 기준)</div></div><div class="acts"><button class="btn s p" onclick="pptImg('mon')">PPT 표 이미지</button><button class="btn s" onclick="copyBody('mon')" title="데이터 칸만 복사 — PPT 표의 '계약' 행 1월 칸을 선택 후 붙여넣기">값만 복사</button></div></div>
  <div class="scroll"><table class="t" id="t8m"><thead><tr><th>구분</th><th class="cy">전년이월</th>${lab.map(l=>`<th>${l}</th>`).join("")}<th class="yt">당해연도 누적</th><th title="계약 = 이월 계약잔액 + 신규 계약 · 매출·매출이익·수금 = 전년까지 누계 + 당해연도 (실적관리 누적 매출액·누적 수금액과 같은 기준) · 미수금·계약잔액 = 현재 잔액">프로젝트 총누적</th></tr></thead><tbody>`+
- rowM("계약","order")+rowM("매출","rev")+rowM("매출이익","pl")+rowM("수금","coll","실제 입금만 (기성 계산서 · VAT 포함 · 선급금 제외) · 이번 달은 기준일까지 · 자금계획 예정액은 아래 회색 '수금 예정' 줄")+collPlanRow58(R)+rowM("미수금","ar","그 달까지 발행한 계산서 중 기준일 현재 아직 못 받은 금액 (나중에 입금되면 0). 칸을 누르면 어느 청구인지 표시")+
+ rowM("계약","order")+rowM("매출","rev")+rowM("매출이익","pl")+rowM("수금","coll","실제 입금 (선급금 포함 · VAT 포함) · 이번 달은 기준일까지 · 자금계획 예정액은 아래 회색 '수금 예정' 줄")+collPlanRow58(R)+rowM("미수금","ar","그 달까지 발행한 계산서 중 기준일 현재 아직 못 받은 금액 (나중에 입금되면 0). 칸을 누르면 어느 청구인지 표시")+
  rowM("계약잔액","backlog")+refRows45(R)+`</tbody></table></div>`+monNote41(R)+`</div>`;
  h+=h8;
  h+=`<div class="card"><div class="row" style="justify-content:space-between"><div><b>주간 확정</b><div class="muted" style="font-size:12px">이번 주 숫자(KPI·현장별 누적 매출액·수금)를 저장해 두면 다음 주 보고에서 '전주' 값과 증감이 자동으로 나옵니다. 다시 누르면 덮어씁니다.</div></div><button class="btn p" id="snapBtn" onclick="snapshot()">${wk().snap?"다시 확정":"이번 주 확정"}</button></div></div>`;
@@ -1811,11 +1815,11 @@ function actYear41(list,cols,M,full,etc){if(etc===undefined)etc=full;const G=SEG
 function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,cols=R.cols,A=R.act,full=A.full,etc=A.etc;
  const segM=A.segM;const nSeg=segM.filter(Boolean).length;
  const sum=a=>a.reduce((t,v)=>t+(v||0),0);
- // v58: 수금액 = 기성 계산서 입금 (선급금 제외 · 월간 누적 실적·실적관리와 같은 기준) · 선급금 수령은 회색 줄로 따로
+ // v58: 수금액 = 입금 전체 (선급금 포함 · 월간 누적 실적·실적관리와 같은 기준) · 숫자를 누르면 내역 (det58 / showBasis)
  const evB=(c,adv)=>c.bills.filter(b=>(bkind45(c.p,b)==="선급")===adv).flatMap(b=>(b.events||[]).filter(e=>e.date&&e.date<=c.D));
  const inYm=(L,ym)=>L.reduce((t,e)=>e.date.slice(0,7)===ym?t+e.amt:t,0),befY=L=>L.reduce((t,e)=>e.date<Y+"-01"?t+e.amt:t,0);
- const rowsP=R.list.map((c,j)=>{const kb=evB(c,false),ad=evB(c,true);return{c,y:yrOf(c),m:A.rowsP[j].m,coll:cols.map(ym=>ym>M?null:inYm(kb,ym)),collPY:befY(kb),adv:cols.map(ym=>ym>M?null:inYm(ad,ym)),advPY:befY(ad),advCum:ad.reduce((t,e)=>t+e.amt,0),g:PFG(c.p)}});
- const nR=r=>r.advCum?5:4;
+ const rowsP=R.list.map((c,j)=>{const ev=evB(c,false).concat(evB(c,true));return{c,y:yrOf(c),m:A.rowsP[j].m,coll:cols.map(ym=>ym>M?null:inYm(ev,ym)),collPY:befY(ev),adv:cols.map(()=>null),advPY:0,advCum:0,g:PFG(c.p)}});
+ const nR=r=>4;
  const gs=[...new Set(rowsP.map(r=>r.g))].sort((a,b)=>(a==="공공 입찰"?0:1)-(b==="공공 입찰"?0:1));
  const allG=[...new Set(["공공 입찰","민간",...DB.projects.map(PFG)])];
  // 기타 · 미연결
@@ -1826,8 +1830,9 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
  const hasU=full&&(uR.some(v=>v&&Math.abs(v)>=1)||uC.some(v=>v&&Math.abs(v)>=1));
  const ids=R.list.map(c=>c.p.id),unl=G&&nSeg&&full?G.unlinked(cols.filter((ym,i)=>segM[i]),ids):[];
  // 그리기
- const cell=(v,t)=>`<td class="n"${t?` title="${esc(t)}"`:""}>${v==null?"":U(v,1)}</td>`;
- const line=(lead,lab,k,py,a,cls,tips)=>`<tr class="${cls||""}">${lead}<td class="c it">${lab}</td>${cell(k)}${cell(py)}<td class="n yt">${U(sum(a),1)}</td>${a.map((v,i)=>cell(v,tips&&tips[i])).join("")}</tr>`;
+ const cell=(v,t,oc)=>`<td class="n${oc&&v?" click":""}"${t?` title="${esc(t)}${oc&&v?" · 눌러서 내역":""}"`:oc&&v?' title="눌러서 내역"':""}${oc&&v?` onclick="${oc}"`:""}>${v==null?"":U(v,1)}</td>`;
+ const line=(lead,lab,k,py,a,cls,tips,clk)=>`<tr class="${cls||""}">${lead}<td class="c it">${lab}</td>${cell(k)}${cell(py)}<td class="n yt">${U(sum(a),1)}</td>${a.map((v,i)=>cell(v,tips&&tips[i],clk?clk(i):null)).join("")}</tr>`;
+ const D58=k=>i=>`det58('${k}','${cols[i]}')`;
  const minus=(a,b)=>a.map((v,i)=>v==null&&b[i]==null?null:(v||0)-(b[i]||0));
  const head=`<tr><th colspan="4">구분</th><th>계약금액<br>(VAT별도)</th><th>전년누적</th><th>${YY}년계</th>${cols.map((ym,i)=>`<th${segM[i]?' class="sg" title="구분손익 반영 — '+esc(segM[i].file||"")+'"':""}>${+ym.slice(5)}월${ym===M&&est&&!segM[i]?"<br><span class=\"hint\">(추정)</span>":ym>M?"<br><span class=\"hint\">-</span>":""}</th>`).join("")}</tr>`;
  let body="";
@@ -1838,7 +1843,8 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
   const nm=`<td class="cl" rowspan="${nR(r)}">${esc(p.client)}</td><td class="nm" rowspan="${nR(r)}" data-copy="${esc(NM(p))}">${esc(NM(p))}${ed}</td>`;
   const tip=r.m.map(x=>x?x.k==="seg"?"구분손익(재무) 기준":x.k==="추정"?"ERP 미마감 — 전표 기준 추정":x.k==="수기"?"수기 입력값":"ERP 결산":"");
   const rv=r.m.map(x=>x&&x.rev),cs=r.m.map(x=>x&&x.cost),pl=r.m.map(x=>x&&x.rev-x.cost);
-  body+=line(gc+nm,"매출",c.contract,r.y.py.rev,rv,"r1",tip)+line("","매출원가",c.budget,r.y.py.cost,cs,"",tip)+line("","매출이익",c.contract-c.budget,r.y.py.rev-r.y.py.cost,pl)+line("","수금액",c.sColl,r.collPY,r.coll,r.advCum?"":"cl4")+(r.advCum?line("","ㄴ 선급금 수령",r.advCum,r.advPY,r.adv,"adv cl4"):"")})});
+  const SB=()=>`showBasis('${p.id}')`;
+  body+=line(gc+nm,"매출",c.contract,r.y.py.rev,rv,"r1",tip,SB)+line("","매출원가",c.budget,r.y.py.cost,cs,"",tip,SB)+line("","매출이익",c.contract-c.budget,r.y.py.rev-r.y.py.cost,pl,"",null,SB)+line("","수금액",c.sColl,r.collPY,r.coll,"cl4",null,i=>`det58('coll','${cols[i]}','${p.id}')`)})});
  // 기타 블록
  const catRow=(k,f)=>segM.map((g,i)=>cols[i]>M||!g?null:(g.cats[k]||{})[f]||0);
  const etcTip=f=>segM.map(g=>g?Object.keys(g.cats).sort((a,b)=>oi(a)-oi(b)).map(k=>`${k} ${U(g.cats[k][f])}`).join(" · "):"구분손익 미반영");
@@ -1849,7 +1855,7 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
  // 합계
  const tR=A.tR,tC=A.tC,tCo=cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.coll[i]||0),0)),tAd=cols.map((ym,i)=>ym>M?null:rowsP.reduce((t,r)=>t+(r.adv[i]||0),0)),hasAd=rowsP.some(r=>r.advCum),nT=hasAd?5:4;
  const T=k=>rowsP.reduce((t,r)=>t+k(r),0);
- body+=line(`<td class="g" rowspan="${nT}">합계</td><td class="cl" rowspan="${nT}">EPC사업부<br>(국내)</td><td class="nm" rowspan="${nT}">${full&&etc?"전체":(full?"전체 현장":"선택 현장 "+R.list.length+"곳")+`<div class="hint">기타 ${etc?"포함":"제외"}${full?"":" · 미연결 제외"}</div>`}</td>`,"매출",T(r=>r.c.contract),T(r=>r.y.py.rev),tR,"r1 tt")+line("","매출원가",T(r=>r.c.budget),T(r=>r.y.py.cost),tC,"tt")+line("","매출이익",T(r=>r.c.contract-r.c.budget),T(r=>r.y.py.rev-r.y.py.cost),minus(tR,tC),"tt")+line("","수금액",T(r=>r.c.sColl),T(r=>r.collPY),tCo,hasAd?"tt":"tt cl4")+(hasAd?line("","ㄴ 선급금 수령",T(r=>r.advCum),T(r=>r.advPY),tAd,"tt adv cl4"):"");
+ body+=line(`<td class="g" rowspan="${nT}">합계</td><td class="cl" rowspan="${nT}">EPC사업부<br>(국내)</td><td class="nm" rowspan="${nT}">${full&&etc?"전체":(full?"전체 현장":"선택 현장 "+R.list.length+"곳")+`<div class="hint">기타 ${etc?"포함":"제외"}${full?"":" · 미연결 제외"}</div>`}</td>`,"매출",T(r=>r.c.contract),T(r=>r.y.py.rev),tR,"r1 tt",null,D58("rev"))+line("","매출원가",T(r=>r.c.budget),T(r=>r.y.py.cost),tC,"tt",null,D58("rev"))+line("","매출이익",T(r=>r.c.contract-r.c.budget),T(r=>r.y.py.rev-r.y.py.cost),minus(tR,tC),"tt",null,D58("rev"))+line("","수금액",T(r=>r.c.sColl),T(r=>r.collPY),tCo,"tt cl4",null,D58("coll"));
  // 검증 · 연결
  const chk=segM.map((g,i)=>full&&etc&&g&&g.chk&&g.chk.rev!=null&&Math.abs(g.chk.rev-tR[i])>=1?`${+cols[i].slice(5)}월 표 합계 ${U(tR[i])} ≠ 파일 EPC사업부(국내) ${U(g.chk.rev)}`:"").filter(Boolean);
  const segTxt=G?(nSeg?`구분손익 반영 ${cols.filter((ym,i)=>segM[i]).map(ym=>+ym.slice(5)+"월").join("·")} (헤더 파란색) — 그 달은 재무 숫자 그대로 · 나머지 달은 ERP 결산${est?"·추정":""}`:"구분손익 미반영 — [구분손익 업로드]로 재무 배포 엑셀을 올리면 기타(전력·O&M 등)가 채워짐"):"";
@@ -1861,7 +1867,7 @@ function yearPerf(R,est){const G=SEGP(),Y=R.M.slice(0,4),YY=Y.slice(2),M=R.M,col
 #t8y tr.adv td{color:var(--muted);font-size:12px;font-weight:400}#t8y tr.adv td.it{text-align:left;padding-left:14px}
 #t8y tr.tt td{font-weight:700;background:var(--th)}#t8y tr.tt.r1 td{border-top:3px double var(--grid2)}#t8y tr.cl4 td{border-bottom:1px solid var(--grid)}#t8y th.sg{color:var(--brand);box-shadow:inset 0 -2px 0 var(--brand)}#t8y .ged{margin-top:4px;font-weight:400}#t8y .ged select{font-size:12px;max-width:130px}
 .segu{display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0}.segu select{font-size:12px}</style>
- <div class="card"><div class="card-h"><div><h2>진행매출(회계) — 프로젝트별 월별 (${UN()})</h2><div class="desc">회계 기준 매출 (재무 구분손익·ERP 진행매출) · 아래 월간 누적 실적·실적관리 매출과 같은 기준 (세금계산서 매출과의 차이 = 미청구공사) · 범위·기타 계정 = 맨 위 열람 프로젝트 바 · ${Y}년 1~12월 · 계약금액 열: 매출=계약금액 · 매출원가=실행예산 · 매출이익=목표이익 · 수금액=기성 계산서 입금 (VAT 포함 · 선급금 제외 — 월간 누적 실적·실적관리와 같은 기준) · ㄴ 선급금 수령 = 회색 줄 (수금과 별도) · ${segTxt}</div></div><div class="acts">${G?`<button class="btn s p" onclick="segPick35()" title="재무 배포 '(SE) ${YY}년 구분손익_MM월' 엑셀 — 여러 달 한 번에 선택 가능, 같은 달은 새 파일로 덮어씀">구분손익 업로드</button>`:""}<button class="btn s" onclick="UI.pfGrpEd=!UI.pfGrpEd;render()">${UI.pfGrpEd?"구분 편집 닫기":"구분 편집"}</button><button class="btn s" onclick="copyTable('t8y')" title="엑셀·PPT 표에 붙여넣기">표 복사</button></div></div>
+ <div class="card"><div class="card-h"><div><h2>진행매출(회계) — 프로젝트별 월별 (${UN()})</h2><div class="desc">회계 기준 매출 (재무 구분손익·ERP 진행매출) · 아래 월간 누적 실적·실적관리 매출과 같은 기준 (세금계산서 매출과의 차이 = 미청구공사) · 범위·기타 계정 = 맨 위 열람 프로젝트 바 · ${Y}년 1~12월 · 계약금액 열: 매출=계약금액 · 매출원가=실행예산 · 매출이익=목표이익 · 수금액=입금액 (선급금 포함 · VAT 포함 — 월간 누적 실적·실적관리와 같은 기준) · 숫자를 누르면 내역 (현장 매출·원가·이익 = 월별 산출 근거, 수금 = 입금 내역, 합계 = 현장별 구성) · ${segTxt}</div></div><div class="acts">${G?`<button class="btn s p" onclick="segPick35()" title="재무 배포 '(SE) ${YY}년 구분손익_MM월' 엑셀 — 여러 달 한 번에 선택 가능, 같은 달은 새 파일로 덮어씀">구분손익 업로드</button>`:""}<button class="btn s" onclick="UI.pfGrpEd=!UI.pfGrpEd;render()">${UI.pfGrpEd?"구분 편집 닫기":"구분 편집"}</button><button class="btn s" onclick="copyTable('t8y')" title="엑셀·PPT 표에 붙여넣기">표 복사</button></div></div>
  ${chk.length?`<div class="hint warn">${chk.map(esc).join(" · ")}</div>`:""}${unlH}
  <div class="scroll"><table class="t" id="t8y"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`}
 // v44: 계획공정률 입력값 읽기 (v55: 실제공정률 = 원가투입법 공정률 → actPct44 는 poc55 블록)
@@ -1874,10 +1880,36 @@ function refRows45(R){const I=R.inv;if(!I)return"";let cp=0,cs=0;const p=[],u=[]
  const td=v=>`<td class="n">${v==null?"":U(v,1)}</td>`;
  return`<tr class="ref45 r45a"><td title="기성 확정 후 발행한 세금계산서 매출 (선급금 제외 · VAT 별도) · PPT 복사 제외">계산서 매출 <span class="hint">참고</span></td><td class="n cy"></td>${p.map(td).join("")}<td class="n yt">${U(cs,1)}</td><td class="n">${U(cs,1)}</td></tr><tr class="ref45"><td title="그 달 말까지 현장 진행매출 누계 − 계산서 매출 누계 (전년 이월 포함 · 기타 계정 제외) = 공사는 했지만 아직 세금계산서를 발행하지 않은 금액 · PPT 복사 제외">미청구 누계 <span class="hint">참고</span></td><td class="n cy">${U(I.carryU,1)}</td>${u.map(td).join("")}<td class="n yt"></td><td class="n">${U(I.carryU+cp-cs,1)}</td></tr>`}
 // v58: 월간 누적 실적 '수금 예정' 회색 참고 줄 — 자금 운영계획에 입력한 수금 예정액 (이번 달 이후) · 실적 아님 → 당해·총누적과 PPT 표에는 안 들어감
+// v58: 진행매출(회계)·월간 누적 실적·실적관리 숫자 → 내역 팝업. ym = 'YYYY-MM' 또는 'prior'(전년이월) · pid 있으면 그 현장만
+function det58(kind,ym,pid){const R=poc55(buildReport(rsPS35(),WI().cutoff,opt()));const A=R.act,cols=R.cols,Y=R.M.slice(0,4),Y0=Y+"-01",Yp=(+Y-1)+"-12",i=cols.indexOf(ym),pr=ym==="prior";
+ const L=pid?R.list.filter(c=>c.p.id===pid):R.list;const mL=pr?(+Y-1)+"년까지":ym?(+ym.slice(5))+"월":"전체";const nm=pid&&L[0]?NM(L[0].p)+" · ":"";
+ const KS={seg:"구분손익(재무)",확정:"ERP 결산",추정:"전표 추정",수기:"수기 입력"};
+ let title="",head=[],rows=[],foot=null,note="";const n=v=>W(Math.round(v||0));
+ if(kind==="coll"||kind==="collp"){title=`${nm}${kind==="collp"?"누적":mL} 수금 내역`;head=["입금일","현장","구분","청구 적요","입금액 (VAT 포함)"];
+  L.forEach(c=>c.bills.forEach(b=>(b.events||[]).forEach(e=>{if(!e.date||e.date>c.D)return;if(kind==="coll"&&!(pr?e.date<Y0:e.date.slice(0,7)===ym))return;rows.push({o:e.date,v:e.amt,r:[e.date,NM(c.p),bkind45(c.p,b)==="선급"?"선급금":"기성",s(b.note),n(e.amt)]})})));
+  rows.sort((a,b)=>a.o<b.o?-1:1);foot=["합계","","","",n(rows.reduce((t,x)=>t+x.v,0))];note="선급금 포함 · 기준일 "+(R.list[0]?R.list[0].D:"")+"까지 입금 · 청구 구분은 사업관리 › 기성 청구에서 수정"}
+ else if(kind==="rev"){title=`${mL} 매출 구성 (진행매출)`;head=["현장","기준","매출","매출원가","매출이익"];
+  if(pr){L.forEach(c=>{if(c.py.rev||c.py.cost)rows.push({v:c.py.rev,c:c.py.cost,id:c.p.id,r:[NM(c.p),"ERP 결산 (전년 말 누계)",n(c.py.rev),n(c.py.cost),n(c.py.rev-c.py.cost)]})})}
+  else{R.list.forEach((c,j)=>{if(pid&&c.p.id!==pid)return;const x=A.rowsP[j].m[i];if(!x||(!x.rev&&!x.cost))return;rows.push({v:x.rev,c:x.cost,id:c.p.id,r:[NM(c.p),KS[x.k]||"",n(x.rev),n(x.cost),n(x.rev-x.cost)]})});
+   if(!pid){if(A.eR[i]||A.eC[i])rows.push({v:A.eR[i]||0,c:A.eC[i]||0,r:["기타 계정 (전력·O&M 등)","구분손익(재무)",n(A.eR[i]),n(A.eC[i]),n((A.eR[i]||0)-(A.eC[i]||0))]});
+    if(A.uR[i]&&(Math.abs(A.uR[i])>=1||Math.abs(A.uC[i]||0)>=1))rows.push({v:A.uR[i]||0,c:A.uC[i]||0,r:["현장 미연결","구분손익(재무)",n(A.uR[i]),n(A.uC[i]),n((A.uR[i]||0)-(A.uC[i]||0))]})}}
+  foot=["합계","",n(rows.reduce((t,x)=>t+x.v,0)),n(rows.reduce((t,x)=>t+x.c,0)),n(rows.reduce((t,x)=>t+x.v-x.c,0))];note="진행매출 = 공정률(누적원가 ÷ 실행예산) × 계약금액 · 구분손익 올린 달은 재무 숫자 · 현장 이름을 누르면 월별 산출 근거"}
+ else if(kind==="order"){title=pr?`${mL} 계약 이월 (이월 계약잔액)`:`${mL} 신규 계약`;head=pr?["현장","계약일","계약금액","전년까지 매출","이월 계약잔액"]:["현장","계약일","발주처","계약금액"];
+  L.forEach(c=>{const cd=s(c.p.contractDate);if(pr){if(c.carry)rows.push({v:c.contract-c.py.rev,id:c.p.id,r:[NM(c.p),cd,n(c.contract),n(c.py.rev),n(c.contract-c.py.rev)]})}else if(cd.slice(0,7)===ym&&cd<=c.D)rows.push({v:c.contract,id:c.p.id,r:[NM(c.p),cd,s(c.p.client),n(c.contract)]})});
+  foot=pr?["합계","","","",n(rows.reduce((t,x)=>t+x.v,0))]:["합계","","",n(rows.reduce((t,x)=>t+x.v,0))]}
+ else if(kind==="backlog"){title=`${mL} 말 계약잔액`;head=["현장","계약금액","누적 진행매출","계약잔액"];
+  L.forEach(c=>{const cd=s(c.p.contractDate);if(pr){if(c.carry)rows.push({v:c.contract-c.py.rev,id:c.p.id,r:[NM(c.p),n(c.contract),n(c.py.rev),n(c.contract-c.py.rev)]});return}
+   if(!(c.carry||(cd&&cd<=limOf(c,ym))))return;const cum=c.cumAt[i];rows.push({v:c.contract-cum,id:c.p.id,r:[NM(c.p),n(c.contract),n(cum),n(c.contract-cum)]})});foot=["합계","","",n(rows.reduce((t,x)=>t+x.v,0))]}
+ else if(kind==="ar"){title=`${mL} 말 미수금`;head=["현장","발행일","구분","청구 적요","발행액","입금 (기준일까지)","미수"];
+  L.forEach(c=>{const Lm=pr?Yp+"-31":limOf(c,ym);c.bills.forEach(b=>{if(!b.date||b.date>Lm)return;const pd=(b.events||[]).filter(e=>e.date<=c.D).reduce((t,e)=>t+e.amt,0);const ar=Math.max(0,b.amt-pd);if(ar>0)rows.push({v:ar,id:c.p.id,r:[NM(c.p),b.date,bkind45(c.p,b)==="선급"?"선급금":"기성",s(b.note),n(b.amt),n(pd),n(ar)]})})});
+  foot=["합계","","","","","",n(rows.reduce((t,x)=>t+x.v,0))];note="그 달 말까지 발행한 계산서 중 기준일 현재 못 받은 금액 (선급금 포함 · VAT 포함)"}
+ const tr=x=>`<tr>${x.r.map((v,k)=>`<td class="${/^-?[\d,]+$/.test(String(v))&&k>0?"n":""}">${k===0&&x.id&&kind!=="coll"&&kind!=="collp"?`<a href="javascript:void 0" onclick="showBasis('${x.id}')">${esc(v)}</a>`:esc(v)}</td>`).join("")}</tr>`;
+ $("modal").innerHTML=`<div class="card-h"><div><h2>${esc(title)}</h2><div class="desc">${esc(note)}${note?" · ":""}단위 원 · 범위 = 맨 위 열람 프로젝트</div></div><div class="acts"><button class="btn s" onclick="closeModal()">닫기</button></div></div>
+ <div class="scroll"><table class="t"><thead><tr>${head.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(tr).join(""):`<tr><td colspan="${head.length}" class="muted">내역 없음</td></tr>`}${foot&&rows.length?`<tr class="sum">${foot.map((v,k)=>`<td class="${k>0&&v?"n":""}">${esc(v)}</td>`).join("")}</tr>`:""}</tbody></table></div>`;$("mb").classList.add("on")}
 function collPlanRow58(R){const P=R.mon.collPlan;if(!P||!P.some(v=>v!=null))return"";const td=v=>`<td class="n">${v==null?"":U(v,1)}</td>`;
  return`<tr class="ref45"><td title="자금 운영계획(현장별 수금 계획)에 입력한 금액 · VAT 포함 · 실적이 아니라 예정 → 누적·PPT 복사 제외">수금 예정 <span class="hint">참고</span></td><td class="n cy"></td>${P.map(td).join("")}<td class="n yt"></td><td class="n"></td></tr>`}
 function monNote41(R){const sum=a=>a.reduce((t,v)=>t+(v||0),0),k=R.kpi,A=R.act,e=A.etc?sum(A.eR):0,u=A.full?sum(A.uR):0;
- return`<div class="hint mon41">매출 = 진행매출 (원가투입법 · 현장 ${U(sum(A.pR),1)}${A.etc?" + 기타 계정 "+U(e,1):""}${Math.abs(u)>=1?" + 현장 미연결 "+U(u,1):""} = 올해 ${U(sum(R.mon.rev),1)}) · 같은 기간 세금계산서 매출 ${U(sum(R.inv.rev),1)} · 매출이익 = 진행매출 − 매출원가 (ERP·재무) · 수금·미수금 = 기성 계산서 기준 (VAT 포함) · 선급금 수령 누계 ${U(k.advIn,1)} (VAT 포함, 수금과 별도) · 회색 참고 줄은 화면 확인용이라 PPT 표·값 복사에는 안 들어감 · 범위·기타 포함 여부는 맨 위 '열람 프로젝트' 바의 [프로젝트 선택]·[기타 계정]</div>`}
+ return`<div class="hint mon41">매출 = 진행매출 (원가투입법 · 현장 ${U(sum(A.pR),1)}${A.etc?" + 기타 계정 "+U(e,1):""}${Math.abs(u)>=1?" + 현장 미연결 "+U(u,1):""} = 올해 ${U(sum(R.mon.rev),1)}) · 같은 기간 세금계산서 매출 ${U(sum(R.inv.rev),1)} · 매출이익 = 진행매출 − 매출원가 (ERP·재무) · 수금·미수금 = 선급금 포함 입금 기준 (VAT 포함 · 선급금 수령 누계 ${U(k.advIn,1)} 포함) · 회색 참고 줄은 화면 확인용이라 PPT 표·값 복사에는 안 들어감 · 범위·기타 포함 여부는 맨 위 '열람 프로젝트' 바의 [프로젝트 선택]·[기타 계정]</div>`}
 /* v55 (2026-11-17): 공정률·매출 기준 통일 — 원가투입법 하나로 (물리적 공정률·수기 실제공정률 폐지)
  * 공정률 = 누적원가 ÷ 실행예산 (ERP 결산, 미마감 달은 전표 누계) · 진행매출 = 공정률 × 계약금액 (구분손익 올린 달은 재무 숫자)
  * 주간보고 실적관리(8p)·월간 누적 실적 매출 = 진행매출 · 세금계산서 매출은 회색 참고 (c.inv / R.inv) · 수금·미수금은 계산서 기준 그대로
@@ -1898,16 +1930,17 @@ function poc55(R){if(R.poc)return R;R.poc=1;const A=R.act,cols=R.cols,M=R.M,Y=M.
   const iv=salesAt45(c,Yp);R.inv.carryRev+=iv;R.inv.carryU+=py.rev-iv});
  const bk=i=>{const ym=cols[i];return R.list.reduce((t,c)=>{const cd=s(c.p.contractDate);return c.carry||(cd&&cd<=limOf(c,ym))?t+c.contract-c.cumAt[i]:t},0)};
  cols.forEach((ym,i)=>{if(ym>M){R.mon.rev[i]=null;R.mon.pl[i]=null;R.mon.backlog[i]=null;return}R.mon.rev[i]=A.tR[i];R.mon.pl[i]=A.tR[i]-A.tC[i];R.mon.backlog[i]=bk(i)});
- // v58: 수금 = 실제 입금만 (기성 계산서 · 이번 달은 기준일까지) · 자금계획 수금 예정은 R.mon.collPlan (회색 참고 줄, 누적·PPT 제외)
+ // v58: 수금 = 실제 입금만 (선급금 포함 · 이번 달은 기준일까지) · 자금계획 수금 예정은 R.mon.collPlan (회색 참고 줄, 누적·PPT 제외)
  const pin=(c,ym)=>{const u=((c.p.fund||{}).in||{})[ym];return u!=null&&u!==""?num(u)*1.1:null};
  R.mon.collPlan=cols.map(ym=>{if(ym<M)return null;let t=0,has=0;R.list.forEach(c=>{const v=pin(c,ym);if(v!=null){t+=v;has=1}});return has?t:null});
- cols.forEach((ym,i)=>{if(ym>M){R.mon.coll[i]=null;return}if(ym===M)R.mon.coll[i]=R.list.reduce((t,c)=>t+c.bills.reduce((x,b)=>bkind45(c.p,b)==="선급"?x:x+(b.events||[]).reduce((y,e)=>e.date&&e.date<=c.D&&e.date.slice(0,7)===M?y+e.amt:y,0),0),0)});
+ cols.forEach((ym,i)=>{if(ym>M){R.mon.coll[i]=null;return}if(ym===M)R.mon.coll[i]=R.list.reduce((t,c)=>t+c.bills.reduce((x,b)=>x+(b.events||[]).reduce((y,e)=>e.date&&e.date<=c.D&&e.date.slice(0,7)===M?y+e.amt:y,0),0),0)});
  const at=a=>iM>=0?a[iM]:0;
  R.tot={order:sum(R.mon.order),rev:sum(R.mon.rev),pl:sum(R.mon.pl),coll:sum(R.mon.coll),ar:at(R.mon.ar),backlog:at(R.mon.backlog)};
  const C=R.list.filter(c=>c.carry);
- const collPY=c=>c.bills.reduce((t,b)=>bkind45(c.p,b)==="선급"?t:t+(b.events||[]).reduce((x,e)=>e.date<Y0&&e.date<=c.D?x+e.amt:x,0),0);
+ const collPY=c=>c.bills.reduce((t,b)=>t+(b.events||[]).reduce((x,e)=>e.date<Y0&&e.date<=c.D?x+e.amt:x,0),0);
  R.prior={order:sum(C.map(c=>c.contract)),rev:sum(R.list.map(c=>c.py.rev)),pl:sum(R.list.map(c=>c.py.rev-c.py.cost)),coll:sum(R.list.map(collPY))};// 전년까지 누계 (총누적에만 합산)
- R.carry={order:sum(C.map(c=>c.contract-c.py.rev)),rev:null,pl:null,coll:null,ar:sum(R.list.map(c=>arAt45(c,Yp))),backlog:sum(C.map(c=>c.contract-c.py.rev))};// 전년이월 열 = 넘어온 잔액만
+ // v58: 전년이월 열 = 계약·계약잔액·미수금은 넘어온 잔액, 매출·매출이익·수금은 전년까지 누계 → 모든 행 전년이월 + 당해연도 = 프로젝트 총누적
+ R.carry={order:sum(C.map(c=>c.contract-c.py.rev)),rev:R.prior.rev,pl:R.prior.pl,coll:R.prior.coll,ar:sum(R.list.map(c=>arAt45(c,Yp))),backlog:sum(C.map(c=>c.contract-c.py.rev))};
  // v58: 매출·매출이익·수금 총누적 = 전년까지 누계(R.prior) + 당해연도 — 실적관리 '누적 매출액·누적 수금액'과 같은 기준 (전년이월 열은 잔액만 표시하므로 비어 있음)
  R.all={order:R.carry.backlog+R.tot.order,rev:R.prior.rev+R.tot.rev,pl:R.prior.pl+R.tot.pl,coll:R.prior.coll+R.tot.coll,ar:R.tot.ar,backlog:R.tot.backlog};
  R.tot.ar-=R.carry.ar;R.tot.backlog-=R.carry.backlog;// 잔액 행의 당해연도 누적 = 올해 증감 → 모든 행이 전년이월 + 당해연도 = 프로젝트 총누적// 총누적 = 이월잔액 + 당해연도 (계약 = 이월 계약잔액 + 신규 계약 = 올해 수행 대상)
