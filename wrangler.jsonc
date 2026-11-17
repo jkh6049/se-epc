@@ -19,5 +19,7 @@
     { "pattern": "se-epc.com", "custom_domain": true },
     { "pattern": "www.se-epc.com", "custom_domain": true }
   ],
+  // 매일 03:00 KST (= 18:00 UTC) 자동 백업 → Durable Object 안에 gzip 보관 60일
+  "triggers": { "crons": ["0 18 * * *"] },
   "observability": { "enabled": true }
 }

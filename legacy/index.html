@@ -7859,6 +7859,8 @@ pp50Pdf=function(){const html=pp50Html();const m=document.createElement("div");m
 .pp51-g{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(260px,1fr);gap:12px;align-items:start}
 @media(max-width:1100px){.pp51-g{grid-template-columns:1fr}}
 `;document.head.appendChild(st)})();
+// ===================== v52: 데이터 보호 안내 (관리 탭 상단) — 휴지통·백업·시점 복구는 /admin (관리자 비밀번호) =====================
+{const _rd52=renderData;renderData=function(){const r=_rd52.apply(this,arguments);try{const t=$("tab-data");if(t&&!$("prot52"))t.insertAdjacentHTML("afterbegin",`<div id="prot52" class="pf-box" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div><b>데이터 보호</b><div class="hint">삭제한 자료는 서버 휴지통에 180일 보관 · 한 번에 많이 지우면 서버가 거부 · 매일 03:00 자동 백업(60일) · 최근 30일 시점 복구</div></div><a class="btn btn-sm btn-secondary" style="margin-left:auto;text-decoration:none" href="/admin" target="_blank" rel="noopener">휴지통·백업·복원 (관리자) →</a></div>`)}catch(e){}return r}}
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();

@@ -1,14 +1,18 @@
-// se-epc 서버: 화면 파일 제공 + /api/* (웹소켓 동기화·내보내기·초기 데이터)
+// se-epc 서버: 화면 파일 제공 + /api/* (웹소켓 동기화·내보내기·초기 데이터) + /admin (데이터 보호·복원)
 // 팀 전체 데이터 = Durable Object "main" 하나 (SQLite 저장). 모든 수정이 이 객체를 한 줄로 거쳐 가므로
 // 도착 순서대로 번호(seq)가 붙고, 같은 레코드는 나중에 도착한 수정이 최종본이 됨.
+// 데이터 보호 (2026-11-17): 삭제 = 휴지통 보관 · 대량 삭제 차단 · 매일 03:00(KST) 자동 백업 · 30일 시점 복구
 import { DurableObject } from "cloudflare:workers";
 import { backupToRecs, recsToBackup, type Rec } from "./shape";
 import { gate } from "./auth";
+import { isAdmin, checkDeletes, gzip, gunzip, type Win } from "./guard";
+import { adminPage } from "./admin";
 
 export interface Env {
   HUB: DurableObjectNamespace<Hub>;
   ASSETS: Fetcher;
   SITE_PASSWORD?: string;
+  ADMIN_PASSWORD?: string;
 }
 
 type Att = { cid: string; name: string; color: string; page: string };
@@ -20,22 +24,39 @@ const json = (o: unknown, status = 200) =>
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
   });
 
+const SNAP_KEEP_DAYS = 60;
+const TRASH_KEEP_DAYS = 180;
+const kstDay = (d = new Date()) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10);
+
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     // 공용 비밀번호 확인 (화면·API 전부)
     const blocked = await gate(req, env.SITE_PASSWORD);
     if (blocked) return blocked;
+    if (url.pathname === "/admin" || url.pathname === "/admin/") return adminPage();
     if (url.pathname.startsWith("/api/")) {
+      // 관리자 기능은 관리자 비밀번호까지 확인 (공용 비밀번호만으로는 불가)
+      const needAdmin = url.pathname.startsWith("/api/admin/") || (url.pathname === "/api/seed" && url.searchParams.get("force") === "1");
+      if (needAdmin) {
+        if (!env.ADMIN_PASSWORD) return json({ error: "관리자 비밀번호가 서버에 설정되지 않음" }, 503);
+        if (!(await isAdmin(req, env.ADMIN_PASSWORD))) return json({ error: "관리자 비밀번호가 맞지 않음" }, 403);
+      }
       const hub = env.HUB.get(env.HUB.idFromName("main"));
       return hub.fetch(req);
     }
     return env.ASSETS.fetch(req);
   },
+  // 매일 03:00 KST (wrangler.jsonc triggers) 자동 백업
+  async scheduled(_ev: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const hub = env.HUB.get(env.HUB.idFromName("main"));
+    ctx.waitUntil(hub.snapshot("daily"));
+  },
 } satisfies ExportedHandler<Env>;
 
 export class Hub extends DurableObject<Env> {
   sql: SqlStorage;
+  wins = new Map<string, Win>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -44,6 +65,14 @@ export class Hub extends DurableObject<Env> {
       c TEXT NOT NULL, id TEXT NOT NULL, d TEXT NOT NULL, by TEXT, at TEXT,
       seq INTEGER NOT NULL, ord INTEGER NOT NULL, PRIMARY KEY(c, id))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT)`);
+    // 휴지통: 지운 레코드 원본 + 누가·언제
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS trash(
+      tid INTEGER PRIMARY KEY AUTOINCREMENT, c TEXT NOT NULL, id TEXT NOT NULL, d TEXT NOT NULL,
+      delAt TEXT NOT NULL, delBy TEXT, seq INTEGER)`);
+    // 백업 (gzip JSON) · 종류: daily(매일 자동) / manual(관리자) / pre-restore(복원 직전 자동)
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS snaps(sid TEXT PRIMARY KEY, kind TEXT, day TEXT, at TEXT, n INTEGER, z BLOB)`);
+    // 관리 기록: 차단된 대량 삭제 · 복원 등
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS audit(aid INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, who TEXT, kind TEXT, detail TEXT)`);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
 
@@ -58,8 +87,10 @@ export class Hub extends DurableObject<Env> {
   seq(): number {
     return Number(this.kvGet("seq") || 0);
   }
-  count(): number {
-    return this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM rec").one().n;
+  count(c?: string): number {
+    return c
+      ? this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM rec WHERE c=?", c).one().n
+      : this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM rec").one().n;
   }
   all(): Rec[] {
     return this.sql
@@ -67,10 +98,15 @@ export class Hub extends DurableObject<Env> {
       .toArray()
       .map((r) => ({ c: r.c, id: r.id, d: JSON.parse(r.d), by: r.by, at: r.at }));
   }
+  audit(who: string, kind: string, detail: string) {
+    this.sql.exec("INSERT INTO audit(at,who,kind,detail) VALUES(?,?,?,?)", new Date().toISOString(), who, kind, detail.slice(0, 2000));
+    this.sql.exec("DELETE FROM audit WHERE aid NOT IN (SELECT aid FROM audit ORDER BY aid DESC LIMIT 2000)");
+  }
 
-  // 수정 묶음 저장 → 새 seq 반환
-  applyOps(ops: Op[]): number {
+  // 수정 묶음 저장 → 새 seq 반환. 삭제는 휴지통에 원본을 남기고 지움
+  applyOps(ops: Op[], who = ""): number {
     let seq = this.seq();
+    const now = new Date().toISOString();
     this.ctx.storage.transactionSync(() => {
       let ord = this.sql.exec<{ m: number | null }>("SELECT MAX(ord) AS m FROM rec").one().m ?? 0;
       for (const o of ops) {
@@ -78,6 +114,8 @@ export class Hub extends DurableObject<Env> {
         const id = String(o.id);
         seq++;
         if (o.op === "del") {
+          const old = this.sql.exec<{ d: string }>("SELECT d FROM rec WHERE c=? AND id=?", o.c, id).toArray()[0];
+          if (old) this.sql.exec("INSERT INTO trash(c,id,d,delAt,delBy,seq) VALUES(?,?,?,?,?,?)", o.c, id, old.d, now, o.by || who || null, seq);
           this.sql.exec("DELETE FROM rec WHERE c=? AND id=?", o.c, id);
         } else if (o.op === "put" && o.d != null) {
           const d = JSON.stringify(o.d);
@@ -95,11 +133,36 @@ export class Hub extends DurableObject<Env> {
     return seq;
   }
 
-  replaceAll(recs: Rec[]): number {
+  replaceAll(recs: Rec[], by = "초기 데이터"): number {
     this.ctx.storage.transactionSync(() => {
       this.sql.exec("DELETE FROM rec");
     });
-    return this.applyOps(recs.map((r) => ({ c: r.c, op: "put", id: r.id, d: r.d, at: new Date().toISOString(), by: "초기 데이터" })));
+    return this.applyOps(recs.map((r) => ({ c: r.c, op: "put", id: r.id, d: r.d, at: new Date().toISOString(), by })));
+  }
+
+  // ---------- 백업 ----------
+  // RPC (매일 자동) + 관리자 '지금 백업'·복원 직전 자동
+  async snapshot(kind: "daily" | "manual" | "pre-restore" = "manual"): Promise<{ sid: string; n: number }> {
+    const day = kstDay();
+    if (kind === "daily") {
+      const has = this.sql.exec("SELECT 1 FROM snaps WHERE kind='daily' AND day=?", day).toArray().length;
+      if (has) return { sid: "", n: 0 };
+    }
+    const recs = this.all();
+    const z = await gzip(JSON.stringify(recsToBackup(recs)));
+    const at = new Date().toISOString();
+    const sid = `${at}-${kind}`;
+    this.sql.exec("INSERT INTO snaps(sid,kind,day,at,n,z) VALUES(?,?,?,?,?,?)", sid, kind, day, at, recs.length, z);
+    // 보관 기간 정리
+    const cut = kstDay(new Date(Date.now() - SNAP_KEEP_DAYS * 864e5));
+    this.sql.exec("DELETE FROM snaps WHERE day < ?", cut);
+    const tcut = new Date(Date.now() - TRASH_KEEP_DAYS * 864e5).toISOString();
+    this.sql.exec("DELETE FROM trash WHERE delAt < ?", tcut);
+    return { sid, n: recs.length };
+  }
+  async snapJson(sid: string): Promise<any | null> {
+    const r = this.sql.exec<{ z: ArrayBuffer }>("SELECT z FROM snaps WHERE sid=?", sid).toArray()[0];
+    return r ? JSON.parse(await gunzip(r.z)) : null;
   }
 
   // ---------- 접속자 ----------
@@ -161,10 +224,10 @@ export class Hub extends DurableObject<Env> {
       });
     }
 
-    // 초기 데이터 넣기: 서버가 비어 있을 때만. 덮어쓰려면 ?force=1
+    // 초기 데이터 넣기: 서버가 비어 있을 때만. 덮어쓰기(?force=1)는 관리자 비밀번호 필요 (바깥 fetch에서 확인)
     if (p === "/api/seed" && req.method === "POST") {
       const force = url.searchParams.get("force") === "1";
-      if (this.count() > 0 && !force) return json({ error: "이미 데이터가 있음. 덮어쓰려면 ?force=1" }, 409);
+      if (this.count() > 0 && !force) return json({ error: "이미 데이터가 있음. 덮어쓰려면 ?force=1 (관리자)" }, 409);
       let body: any;
       try {
         body = await req.json();
@@ -172,11 +235,138 @@ export class Hub extends DurableObject<Env> {
         return json({ error: "JSON 아님" }, 400);
       }
       const recs = backupToRecs(body);
-      const seq = this.replaceAll(recs);
+      if (force && this.count() > 0) await this.snapshot("pre-restore");
+      const seq = this.replaceAll(recs, force ? "관리자 복원" : "초기 데이터");
+      if (force) this.audit("관리자", "전체 덮어쓰기", `백업 파일 ${recs.length}건 (${body?.exportedAt || "날짜 없음"})`);
       this.broadcast({ t: "reload" });
       return json({ ok: true, records: recs.length, seq });
     }
 
+    if (p.startsWith("/api/admin/")) return this.admin(req, url, p.slice("/api/admin/".length));
+
+    return json({ error: "not found" }, 404);
+  }
+
+  // ---------- 관리자 (비밀번호는 바깥 fetch에서 확인됨) ----------
+  async admin(req: Request, url: URL, a: string): Promise<Response> {
+    const body = async () => {
+      try {
+        return await req.json<any>();
+      } catch {
+        return {};
+      }
+    };
+    if (a === "status") {
+      const snaps = this.sql.exec<{ sid: string; kind: string; at: string; n: number }>("SELECT sid,kind,at,n FROM snaps ORDER BY at DESC LIMIT 1").toArray();
+      return json({
+        records: this.count(),
+        seq: this.seq(),
+        online: this.sockets().length,
+        trash: this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM trash").one().n,
+        snaps: this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM snaps").one().n,
+        lastSnap: snaps[0] || null,
+        blocked7d: this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM audit WHERE kind='대량 삭제 차단' AND at > ?", new Date(Date.now() - 7 * 864e5).toISOString()).one().n,
+      });
+    }
+    if (a === "trash") {
+      const q = (url.searchParams.get("q") || "").trim();
+      const rows = this.sql
+        .exec<{ tid: number; c: string; id: string; d: string; delAt: string; delBy: string }>(
+          "SELECT tid,c,id,d,delAt,delBy FROM trash ORDER BY tid DESC LIMIT 3000",
+        )
+        .toArray()
+        .map((r) => {
+          let d: any = {};
+          try {
+            d = JSON.parse(r.d);
+          } catch {}
+          const label = String(d.name || d.title || d.label || d.text || d.content || d.ym || d.wk || r.id).slice(0, 80);
+          return { tid: r.tid, c: r.c, id: r.id, delAt: r.delAt, delBy: r.delBy || "", label, pid: d.projectId || "", alive: this.sql.exec("SELECT 1 FROM rec WHERE c=? AND id=?", r.c, r.id).toArray().length > 0 };
+        })
+        .filter((r) => !q || (r.label + " " + r.delBy + " " + r.c).includes(q));
+      return json({ rows });
+    }
+    if (a === "undelete" && req.method === "POST") {
+      const b = await body();
+      const tids: number[] = (b.tids || []).map(Number).filter(Boolean).slice(0, 5000);
+      const ops: Op[] = [];
+      const now = new Date().toISOString();
+      for (const tid of tids) {
+        const r = this.sql.exec<{ c: string; id: string; d: string }>("SELECT c,id,d FROM trash WHERE tid=?", tid).toArray()[0];
+        if (r) ops.push({ c: r.c, op: "put", id: r.id, d: JSON.parse(r.d), at: now, by: "관리자 복원" });
+      }
+      if (!ops.length) return json({ error: "복원할 항목 없음" }, 400);
+      const seq = this.applyOps(ops, "관리자");
+      this.sql.exec(`DELETE FROM trash WHERE tid IN (${tids.map(() => "?").join(",")})`, ...tids);
+      this.audit("관리자", "휴지통 복원", `${ops.length}건`);
+      this.broadcast({ t: "ops", seq, from: "admin", ops });
+      return json({ ok: true, restored: ops.length, seq });
+    }
+    if (a === "snaps") {
+      return json({ rows: this.sql.exec("SELECT sid,kind,day,at,n,length(z) AS size FROM snaps ORDER BY at DESC").toArray() });
+    }
+    if (a === "snap-now" && req.method === "POST") {
+      const r = await this.snapshot("manual");
+      this.audit("관리자", "수동 백업", `${r.n}건`);
+      return json({ ok: true, ...r });
+    }
+    if (a === "snap") {
+      const sid = url.searchParams.get("sid") || "";
+      const j = await this.snapJson(sid);
+      if (!j) return json({ error: "백업 없음" }, 404);
+      return new Response(JSON.stringify(j), {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="epc-backup-${sid.slice(0, 16).replace(/[:T]/g, "")}.json"`,
+          "cache-control": "no-store",
+        },
+      });
+    }
+    if (a === "restore-snap" && req.method === "POST") {
+      const b = await body();
+      const j = await this.snapJson(String(b.sid || ""));
+      if (!j) return json({ error: "백업 없음" }, 404);
+      await this.snapshot("pre-restore");
+      const recs = backupToRecs(j);
+      const seq = this.replaceAll(recs, "관리자 복원");
+      this.audit("관리자", "백업으로 복원", `${b.sid} · ${recs.length}건 (복원 직전 상태는 'pre-restore' 백업으로 보관)`);
+      this.broadcast({ t: "reload" });
+      return json({ ok: true, records: recs.length, seq });
+    }
+    // 시점 복구: 최근 30일 안의 시각으로 저장소 전체(휴지통·백업 포함)를 되돌림. 되돌리기용 현재 북마크를 응답으로 돌려줌
+    if (a === "pitr" && req.method === "POST") {
+      const b = await body();
+      const st: any = this.ctx.storage;
+      if (typeof st.getBookmarkForTime !== "function") return json({ error: "이 환경에서는 시점 복구를 지원하지 않음 (로컬 개발 환경 등)" }, 501);
+      let target: string;
+      if (b.bookmark) target = String(b.bookmark);
+      else {
+        const t = new Date(String(b.time || ""));
+        if (isNaN(t.getTime())) return json({ error: "시각 형식 오류" }, 400);
+        if (Date.now() - t.getTime() > 30 * 864e5) return json({ error: "30일 이전 시각은 복구 불가" }, 400);
+        if (t.getTime() > Date.now()) return json({ error: "미래 시각" }, 400);
+        try {
+          target = await st.getBookmarkForTime(t);
+        } catch (e: any) {
+          return json({ error: "시점 복구를 쓸 수 없음 (로컬 개발 환경은 미지원): " + String(e?.message || e).slice(0, 200) }, 501);
+        }
+      }
+      let undo = "";
+      try {
+        undo = await st.getCurrentBookmark();
+      } catch (e: any) {
+        return json({ error: "시점 복구를 쓸 수 없음 (로컬 개발 환경은 미지원): " + String(e?.message || e).slice(0, 200) }, 501);
+      }
+      this.audit("관리자", "시점 복구", `${b.bookmark ? "북마크 " + target : b.time} · 되돌리기 북마크 ${undo}`);
+      await st.onNextSessionRestoreBookmark(target);
+      this.broadcast({ t: "reload" });
+      // 응답을 보낸 뒤 객체를 다시 시작 → 재시작 시 저장소가 그 시점으로 바뀜. 접속자는 자동 재연결
+      setTimeout(() => this.ctx.abort("시점 복구"), 300);
+      return json({ ok: true, undo, target });
+    }
+    if (a === "audit") {
+      return json({ rows: this.sql.exec("SELECT at,who,kind,detail FROM audit ORDER BY aid DESC LIMIT 300").toArray() });
+    }
     return json({ error: "not found" }, 404);
   }
 
@@ -203,7 +393,17 @@ export class Hub extends DurableObject<Env> {
 
     if (m.t === "ops" && Array.isArray(m.ops)) {
       const ops: Op[] = m.ops.slice(0, 5000);
-      const seq = this.applyOps(ops);
+      // 대량 삭제 차단: 묶음 전체를 거부하고 보낸 사람에게 사유 전달 (보낸 사람 화면은 서버 데이터로 되돌아감)
+      const dels = ops.filter((o) => o && o.op === "del" && this.sql.exec("SELECT 1 FROM rec WHERE c=? AND id=?", o.c, String(o.id)).toArray().length);
+      const win = this.wins.get(a.cid) || { t0: Date.now(), top: 0, del: 0 };
+      this.wins.set(a.cid, win);
+      const reason = checkDeletes(dels, (c) => this.count(c), win, Date.now());
+      if (reason) {
+        this.audit(a.name || a.cid, "대량 삭제 차단", `${reason} · 묶음 ${ops.length}건`);
+        this.send(ws, { t: "reject", b: m.b, reason });
+        return;
+      }
+      const seq = this.applyOps(ops, a.name);
       this.send(ws, { t: "ack", b: m.b, seq });
       this.broadcast({ t: "ops", seq, from: a.cid, ops }, ws);
       return;

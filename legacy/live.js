@@ -115,6 +115,16 @@
       } else if (m.t === "ack") {
         L.pending = L.pending.filter(function (p) { return p.b !== m.b; });
         savePending();
+      } else if (m.t === "reject") {
+        // 서버가 대량 삭제를 차단: 그 묶음은 버리고 서버 데이터로 화면을 되돌림
+        L.pending = L.pending.filter(function (p) { return p.b !== m.b; });
+        savePending();
+        try { alert("서버가 이번 수정을 거부했습니다 (대량 삭제 보호)
+
+사유: " + (m.reason || "") + "
+
+화면을 서버 데이터로 되돌립니다. 정말 지워야 하는 경우 관리자에게 요청하세요."); } catch (x) {}
+        raw({ t: "hello", name: myName() });
       } else if (m.t === "ops") {
         applyOps(m.ops || []);
       } else if (m.t === "presence") {

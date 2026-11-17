@@ -3,6 +3,7 @@
 //       npm run seed -- https://se-epc.com --force
 // 서버가 비어 있을 때만 들어감. 이미 데이터가 있으면 --force 로 덮어씀 (접속 중인 화면은 자동 새로 맞춤)
 // 공용 비밀번호: 환경변수 SITE_PASSWORD, 없으면 .dev.vars 의 값을 사용
+// --force(덮어쓰기)는 관리자 비밀번호도 필요: 환경변수 ADMIN_PASSWORD, 없으면 .dev.vars 의 ADMIN_PASSWORD (덮어쓰기 직전 서버가 자동 백업)
 import fs from "node:fs";
 
 const args = process.argv.slice(2);
@@ -19,10 +20,17 @@ if (!pw) {
   console.error("공용 비밀번호가 필요해: SITE_PASSWORD 환경변수 또는 .dev.vars");
   process.exit(1);
 }
+let admin = process.env.ADMIN_PASSWORD || "";
+if (!admin && fs.existsSync(".dev.vars")) admin = (fs.readFileSync(".dev.vars", "utf8").match(/^ADMIN_PASSWORDs*=s*"?([^"
+]*)"?/m) || [])[1] || "";
+if (force && !admin) {
+  console.error("--force 는 관리자 비밀번호가 필요해: ADMIN_PASSWORD 환경변수 또는 .dev.vars");
+  process.exit(1);
+}
 const body = fs.readFileSync(file, "utf8");
 const res = await fetch(`${base.replace(/\/$/, "")}/api/seed${force ? "?force=1" : ""}`, {
   method: "POST",
-  headers: { "content-type": "application/json", "x-site-password": pw },
+  headers: { "content-type": "application/json", "x-site-password": pw, ...(force ? { "x-admin-password": admin } : {}) },
   body,
 });
 console.log(res.status, await res.text());
