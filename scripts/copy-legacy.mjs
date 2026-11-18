@@ -2,7 +2,7 @@
 import fs from "node:fs";
 
 fs.mkdirSync("dist", { recursive: true });
-for (const f of ["index.html", "live.js"]) fs.copyFileSync(`legacy/${f}`, `dist/${f}`);
+for (const f of ["index.html", "live.js", "ui.js", "mgr.js"]) fs.copyFileSync(`legacy/${f}`, `dist/${f}`);
 fs.cpSync("legacy/public", "dist", { recursive: true });
 fs.writeFileSync("dist/robots.txt", "User-agent: *\nDisallow: /\n");
 console.log("legacy → dist 복사 완료");

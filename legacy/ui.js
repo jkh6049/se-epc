@@ -1,0 +1,157 @@
+// 화면 디자인 공통 (2026-11-18) — 시안 1안 '레이어드 엘리베이션' + 정리안 규칙
+// index.html 안의 v59·v59g·v59h·v59i 블록을 파일로 분리 (사업지원 기능과 분리해서 main 에 디자인만 반영하기 위함)
+// 기능 코드는 건드리지 않음: 색 변수·카드 그림자·경계·띠 제거·입력칸·표 규칙·? 툴팁만. 없는 화면의 클래스 규칙은 아무 영향 없음
+(function(){
+// ===================== v59 (2026-11-18): 입력칸 일괄 통일 — 표 안 입력칸도 상단 폼(현장명 등)과 같은 모양 · 표 칸 비율 정리 =====================
+// 표 안 input/select/textarea 가 브라우저 기본 모양(회색·각진 테두리)으로 나오던 문제 → 공통 규칙. :where() 라 기존 개별 스타일이 있으면 그쪽이 우선
+(()=>{const st=document.createElement("style");st.textContent=`
+:where(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),select,textarea){padding:7px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg-input);color:var(--text);font-family:inherit;font-size:13px;line-height:1.35}
+:where(textarea){resize:vertical}
+:where(input,select,textarea):hover{border-color:var(--border-hover)}
+:where(input,select,textarea):disabled{opacity:.6;cursor:not-allowed}
+/* 표 안 입력칸: 같은 모양, 행 높이에 맞춰 살짝 촘촘하게 · 칸 가운데 정렬 */
+.b57-kv input,.b57-kv textarea,.b57-t input,.b57-t textarea,.b57-t select,.ho-t input,.ho-t select{width:100%;min-width:0;box-sizing:border-box;padding:6px 9px;font-size:12.5px;border-radius:6px}
+.b57-t td,.b57-kv td,.b57-kv th{vertical-align:middle}
+.bz57.bz57-ed .b57-t td,#nb57 .b57-t td{padding:3px 4px}.bz57.bz57-ed .b57-kv td,#nb57 .b57-kv td{padding:3px 6px}
+.b57-t textarea,.b57-kv textarea,.ho-t textarea{display:block;min-height:32px;height:auto;field-sizing:content;max-height:220px}
+.ho-t{border-collapse:collapse}.ho-t td{padding:6px 8px}.ho-t th:nth-child(2){width:130px!important}.ho-t select{min-width:0}
+#hoPanel input{padding:5px 8px;font-size:12.5px}
+`;document.head.appendChild(st)})();
+
+// ===================== v59g (2026-11-18): 화면 스타일 = 시안 1안 '레이어드 엘리베이션' (docs/ui-sian.html) =====================
+// 테두리 대신 여러 겹의 얇은 그림자(1px 링 + 짧은 그림자 + 넓은 그림자)로 카드를 띄움 · 누를 수 있는 카드는 마우스를 올리면 떠오름
+// 색 변수만 바꾸고 기존 화면 구조는 그대로 → 실적관리(ERP) 프레임도 erpSkin 이 같은 변수를 받아 감
+(()=>{const st=document.createElement("style");st.id="skin59";st.textContent=`
+:root{--bg:#f3f5f8;--bg-elev:#ffffff;--bg-elev2:#f4f6f9;--bg-input:#f6f7f9;--border:#e6e9ef;--border-strong:#dde1e8;--border-hover:#b9c0cc;
+ --text:#0f172a;--text-dim:#475569;--text-faint:#64748b;--accent:#2f6fed;--accent-dim:#eaf1fe;--danger:#dc2626;--danger-dim:#fde8e8;--success:#16a34a;--warning:#b7791f;
+ --shadow:0 0 0 1px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.05),0 6px 16px -4px rgba(16,24,40,.08);
+ --shadow-h:0 0 0 1px rgba(16,24,40,.07),0 4px 8px rgba(16,24,40,.06),0 18px 32px -8px rgba(16,24,40,.18);
+ --card-bd:transparent;--row-h:#f7f9fc;--fill:linear-gradient(90deg,#2f6fed,#6c9bff);--trk:#eef1f5;
+ --sb-bg:#ffffff;--sb-bg2:#f4f6f9;--sb-line:#e6e9ef}
+:root[data-theme="dark"]{--bg:#0b0d12;--bg-elev:#151922;--bg-elev2:#191e29;--bg-input:#0f1218;--border:#1e2331;--border-strong:#262c3b;--border-hover:#3a4255;
+ --text:#e8ebf2;--text-dim:#aab2c3;--text-faint:#7f889a;--accent:#6b9bff;--accent-dim:rgba(107,155,255,.13);--danger:#f87171;--danger-dim:rgba(248,113,113,.13);--success:#4ade80;--warning:#fbbf24;
+ --shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.45),0 8px 24px -6px rgba(0,0,0,.6);
+ --shadow-h:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.45),0 20px 40px -10px rgba(0,0,0,.75);
+ --card-bd:rgba(255,255,255,.06);--row-h:#191e29;--fill:linear-gradient(90deg,#4f86ff,#8db1ff);--trk:#1f2431;
+ --sb-bg:#10131a;--sb-bg2:#191e29;--sb-line:#1c2130}
+/* 카드: 테두리 → 그림자 링 */
+.panel,.hl-box,.tgrp,.pc2,.fm-card,.fm-ed,.td-box,.h18-c,.pf-box,.rx-c,.stat,.pcard,.kcard,.lg-it,.sk24,.m59-k,.st59,.h57-ban,.s59-l,.m59-lane,.hl-kpi .k,.modal,.f59{background:var(--bg-elev);border-color:var(--card-bd)!important;box-shadow:var(--shadow);border-radius:12px}
+.panel{border-left-width:0;border-style:solid;border-width:1px}
+.panel.bz57{border-left:3px solid #7c3aed!important}.st59{border-left:4px solid var(--c)!important}.h57-ban{border-left:4px solid var(--c)!important}.m59-lane{border-top:3px solid var(--c)!important}
+.pc2,.stat,.pcard,.kcard,.m59-k.go,.sk24[onclick],.h57-k,.rx-c[onclick],.hl-kpi .k[onclick],.stage-tile{transition:transform .22s ease,box-shadow .22s ease}
+.pc2:hover,.stat:hover,.pcard:hover,.kcard:hover,.m59-k.go:hover,.sk24[onclick]:hover,.h57-k:hover,.rx-c[onclick]:hover,.hl-kpi .k[onclick]:hover{box-shadow:var(--shadow-h);transform:translateY(-2px)}
+.modal{box-shadow:var(--shadow-h)}
+/* 카드 안 칸 (요약 8칸·흐름 칸) */
+.f59{gap:0;background:var(--bg-elev)}.f59>div{background:transparent;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.m59-st button{background:var(--bg-elev2)}
+/* 상단 바 · 사이드바 */
+.topbar{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(160%) blur(8px);-webkit-backdrop-filter:saturate(160%) blur(8px);border-bottom:1px solid var(--border)}
+.sidebar{background:var(--sb-bg);border-right:1px solid var(--sb-line)}
+.sb-item{border-radius:9px}.sb-item.active{background:var(--accent-dim)!important;color:var(--accent)!important;font-weight:700}
+.sb-item.active .ic{color:var(--accent)}
+/* 버튼 */
+.btn{border-radius:8px;box-shadow:0 1px 2px rgba(16,24,40,.08)}.btn-secondary{background:var(--bg-elev);border-color:var(--border-strong);box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.btn:hover{filter:brightness(1.04)}.btn-secondary:hover{background:var(--bg-elev2)}
+/* 입력칸 */
+:where(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),select,textarea){border-radius:8px}
+/* 진행 막대 */
+.m59-bar,.ho-bar,.stg .pbar{background:var(--trk);border-radius:99px}.m59-bar i,.ho-bar i,.stg .pbar i{background:var(--fill)!important;border-radius:99px}
+/* 표 */
+.m59-t th,.h59-t th,.b57-kv th{background:transparent;color:var(--text-faint)}.m59-t tbody tr:hover td,.h59-t tbody tr:hover td{background:var(--row-h)}
+.m59-t td,.h59-t td{border-color:var(--border)}
+`;document.head.appendChild(st)})();
+// 실적관리(주간보고·경영보고) 프레임에도 같은 카드 그림자
+{const _sk59=erpSkin;erpSkin=function(){const r=_sk59.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("skin59");if(!s){s=doc.createElement("style");s.id="skin59";doc.head.appendChild(s)}
+ s.textContent=`.card,.panel,.box{border-color:transparent!important;border-radius:12px!important;box-shadow:0 0 0 1px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.05),0 6px 16px -4px rgba(16,24,40,.08)}
+:root[data-theme=dark] .card,:root[data-theme=dark] .panel,:root[data-theme=dark] .box{border-color:rgba(255,255,255,.06)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.45),0 8px 24px -6px rgba(0,0,0,.6)}
+@media print{.card,.panel,.box{box-shadow:none!important;border-color:#ccc!important}}`}catch(e){}return r}}
+
+// ===================== v59h (2026-11-18): 카드 경계 명확하게 — 바깥 카드 · 안쪽 상자 · 칸(타일) 3단계 면 =====================
+// 다크에서 카드 안 카드가 같은 바탕·흐린 선이라 구분이 안 되던 문제 (건호 피드백) → 단계마다 바탕을 한 칸씩 밝게 + 선을 또렷하게
+(()=>{const st=document.createElement("style");st.id="skin59h";st.textContent=`
+:root{--border:#e2e6ed;--border-strong:#d5dae3;--bd-card:rgba(16,24,40,.10);--bg-inner:#f7f9fb;--bd-inner:#e2e6ed;--bg-tile:#ffffff;--bd-tile:#dfe4eb;
+ --shadow:0 0 0 1px rgba(16,24,40,.09),0 1px 2px rgba(16,24,40,.05),0 6px 16px -4px rgba(16,24,40,.08);
+ --shadow-h:0 0 0 1px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.06),0 18px 32px -8px rgba(16,24,40,.18)}
+:root[data-theme="dark"]{--border:#272d3c;--border-strong:#333a4c;--card-bd:rgba(255,255,255,.10);--bd-card:rgba(255,255,255,.10);--bg-inner:#1b2030;--bd-inner:rgba(255,255,255,.10);--bg-tile:#232a3b;--bd-tile:rgba(255,255,255,.12);
+ --shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 0 1px rgba(255,255,255,.07),0 8px 24px -6px rgba(0,0,0,.6);
+ --shadow-h:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,255,255,.12),0 20px 40px -10px rgba(0,0,0,.75)}
+/* 카드 안의 카드 = 안쪽 상자: 그림자 없이 한 칸 다른 바탕 + 또렷한 선 */
+:is(.panel,.hl-box,.tgrp,.pf-box,.rx-c,.fm-ed,.td-box,.h18-c,.s59-l,.modal) :is(.panel,.hl-box,.tgrp,.pf-box,.rx-c,.td-box,.h18-c,.sk24,.stat,.pcard,.lg-it,.s59-l,.m59-lane,.f59,.bz57-m>div,.st59-s li,.g59s li){box-shadow:none!important;background:var(--bg-inner)!important;border:1px solid var(--bd-inner)!important}
+.m59-lane{background:var(--bg-inner)!important;border:1px solid var(--bd-inner)!important;border-top:3px solid var(--c)!important;box-shadow:none!important}
+/* 안쪽 상자 안의 칸 = 타일: 다시 한 칸 다른 바탕 + 선 */
+.m59-st button{background:var(--bg-tile)!important;border:1px solid var(--bd-tile)!important;border-radius:9px}
+.m59-st button:hover{outline:2px solid var(--c);outline-offset:-1px}
+.f59>div{border-color:var(--bd-inner)!important}
+.s59{border-top:1px solid var(--bd-inner)!important}.s59.on>.s59-h{background:var(--bg-tile)}
+.st59-s li,.g59s li{background:var(--bg-tile)!important;border:1px solid var(--bd-tile)!important}
+.st59-s li.cur,.g59s li.cur{border-color:var(--c,var(--accent))!important}
+/* 바깥 카드 (화면 바탕 위) */
+.panel,.hl-box,.tgrp,.pc2,.fm-card,.fm-ed,.td-box,.h18-c,.pf-box,.rx-c,.stat,.pcard,.kcard,.lg-it,.sk24,.m59-k,.st59,.h57-ban,.modal{border:1px solid var(--card-bd)}
+.panel.bz57{border-left:3px solid #7c3aed!important}.st59,.h57-ban{border-left:4px solid var(--c)!important}
+/* 카드 안 구분선 · 표 줄 */
+.m59-u,.m59-i{border-top-color:var(--bd-inner)!important}.m59-t td,.h59-t td,.b57-t td,.b57-kv td,.b57-kv th{border-color:var(--bd-inner)!important}
+.m59-t th,.h59-t th{border-color:var(--bd-inner)!important;background:var(--bg-inner)!important}
+`;document.head.appendChild(st)})();
+
+// ===================== v59i (2026-11-18): 카드 색 띠 전부 제거 — 모든 카드 같은 모양 (건호 피드백: 어떤 카드는 띠가 있고 어떤 카드는 없어 통일 안 됨) =====================
+// 팀·상태 구분은 띠 대신 카드 안의 색 글씨·태그로 (사업 흐름 팀 이름 색, 구간 태그 등은 그대로)
+const NOSTRIPE59=`
+.panel,.bz57,.panel.bz57,.h57-ban,.st59,.pcard.partner,.lg-it.wait,.ps22-info{border-left:1px solid var(--card-bd)!important}
+.pp51-t,.rs35d,.sc24-c.all,.sc24-sub,.cl-banner,.t59-sel{border-left:1px solid var(--border)!important}
+.m59-lane,.h57-k,.kp36 .k36,.kp36 .k36.bad,.kp36 .k36.good,.kp36 .k36.warn{border-top:1px solid var(--bd-inner,var(--border))!important}
+.sk24::before,.stage-tile::before,.sk::before{display:none!important}
+.kcard,.kcard.compact{border-left:1px solid var(--card-bd)!important}.pcard.vg46-card{border-top:1px solid var(--card-bd)!important}.pp51-st{border-top:1px solid var(--border)!important}
+.sk24{padding-left:12px}`;
+(()=>{const st=document.createElement("style");st.id="skin59i";st.textContent=NOSTRIPE59;document.head.appendChild(st)})();
+// 실적관리(주간보고·경영보고) 프레임: STEP 카드·안내 상자·숫자 칸 띠도 제거
+{const _sk59i=erpSkin;erpSkin=function(){const r=_sk59i.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("skin59i");if(!s){s=doc.createElement("style");s.id="skin59i";doc.head.appendChild(s)}
+ s.textContent=`.step,.step.ok,.step.warn,.step.err,.ins,.rm34h,.rs35b,.rs35d{border-left:1px solid var(--line)!important}.pc{border-top:1px solid var(--line)!important}.kpi::before,.sk::before{display:none!important}`}catch(e){}return r}}
+try{erpSkin()}catch(e){}
+
+})();
+// ===================== 정리안 규칙 전 화면 (2026-11-18) =====================
+// 홈 사업부 현황에서 확정한 규칙을 모든 표·제목에 적용: 표 제목줄(칠한 바탕·진한 굵은 글씨·가운데) · 줄/열 구분선 · 숫자 오른쪽 정렬(자동 판별)
+// · 긴 설명 문구(40자 이상, 글자만 있는 것) → '?' 툴팁 · 다크에서 팀·단계 칩 밝게
+(function(){
+const css=`
+:root{--tbl-line:#d7dde6;--tbl-vline:#e7ebf1;--tbl-head:#e6ecf4;--tbl-head-tx:#0f172a;--tbl-head-line:#c3cbd7}
+:root[data-theme="dark"]{--tbl-line:rgba(255,255,255,.12);--tbl-vline:rgba(255,255,255,.06);--tbl-head:#2a3247;--tbl-head-tx:#f1f4fa;--tbl-head-line:rgba(255,255,255,.22)}
+.q59{display:inline-grid;place-items:center;flex:0 0 auto;width:17px;height:17px;border-radius:50%;border:1px solid var(--border-strong);font-size:10.5px;font-weight:700;font-style:normal;color:var(--text-faint);cursor:help;vertical-align:middle;margin-left:6px;line-height:1}
+.q59:hover{color:var(--accent);border-color:var(--accent)}
+/* 표: 제목줄 */
+.main table:not(.m59-t) :is(thead th,tr.hd59>th){background:var(--tbl-head)!important;color:var(--tbl-head-tx)!important;font-size:13px!important;font-weight:800!important;text-align:center!important;border-bottom:2px solid var(--tbl-head-line)!important;padding-top:9px;padding-bottom:9px}
+/* 표: 줄·열 구분선 · 글자 크기 */
+.main table:not(.m59-t):not(.b57-kv) td{border-bottom:1px solid var(--tbl-line)}
+.main table:not(.m59-t) td{font-size:13.5px}
+.main table:not(.m59-t):not(.b57-kv) :is(thead th,tr.hd59>th)+:is(th){border-left:1px solid color-mix(in srgb,var(--tbl-head-line) 55%,transparent)}
+.main table:not(.m59-t):not(.b57-kv) td+td{border-left:1px solid var(--tbl-vline)}
+.main table:not(.m59-t) tbody tr:hover>td{background:var(--row-h)}
+/* 숫자 칸 (자동 판별) = 오른쪽 · 자릿수 맞춤 */
+td.num59{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 칸·표 이름표 (세로 제목: 사업 개요 등) */
+.main .b57-kv th{color:var(--tbl-head-tx);font-weight:700;background:var(--tbl-head)!important}
+/* 다크: 팀·단계 칩 밝게 */
+:root[data-theme="dark"] :is(.ph57,.t57-t,.m59-tm,.ho59){color:color-mix(in srgb,var(--c,var(--accent)) 55%,#fff)}
+/* 인쇄·미리보기 종이(흰 바탕)는 제외 */
+:is(.pp50,.bp57,.bg23-paper,#printSheet) table :is(th,td){background:initial;color:inherit}
+`;
+const st=document.createElement("style");st.id="ui-rules";st.textContent=css;document.head.appendChild(st);
+// 실적관리(주간보고·경영보고) 프레임: 제목줄 진하게 · 칠한 바탕 · 다크 격자선
+{const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("ui-rules");if(!s){s=doc.createElement("style");s.id="ui-rules";doc.head.appendChild(s)}
+ s.textContent=`:root{--th:#e6ecf4}:root[data-theme=dark]{--th:#2a3247;--grid:rgba(255,255,255,.13);--grid2:rgba(255,255,255,.24)}
+table.t th{color:var(--text)!important;font-weight:800!important;font-size:12.5px!important}
+table.t td{font-size:13px}
+@media print{:root,:root[data-theme]{--th:#eef1f5}}`}catch(e){}return r}}
+try{erpSkin()}catch(e){}
+// 화면이 바뀔 때마다: 제목줄 표시 · 숫자 칸 판별 · 긴 설명 → ?
+const NUM=/^[-+−]?\(?[\d,]+(\.\d+)?\)?\s*(억|억원|원|만|만원|%|%p|건|곳|개|명|일|kW|kWp|MW|회|차)?$/;
+function pass(root){
+ root.querySelectorAll("table:not([data-u59])").forEach(t=>{t.dataset.u59=1;if(!t.tHead){const tr=t.rows[0];if(tr&&tr.cells.length>1&&[...tr.cells].every(c=>c.tagName==="TH"))tr.classList.add("hd59")}});
+ root.querySelectorAll("td:not([data-u59])").forEach(td=>{td.dataset.u59=1;if(td.children.length>1)return;const x=td.textContent.trim();if(x&&x!=="-"&&NUM.test(x))td.classList.add("num59")});
+ root.querySelectorAll(".panel .hint:not([data-u59]),.pf-box h4 .hint:not([data-u59]),.hl-box .hint:not([data-u59]),.bz57-h .hint:not([data-u59]),.m59-h .hint:not([data-u59])").forEach(h=>{h.dataset.u59=1;
+  if(h.children.length||h.closest("td,li,label,button,.modal-actions,.s59-b,.form-row"))return;const x=h.textContent.trim();if(x.length<40)return;
+  if(h.tagName!=="SPAN")return;const head=h.parentElement,rest=head?head.textContent.trim().length-x.length:0;if(!head||rest<2||rest>60)return;if(!/^H[1-6]$/.test(head.tagName)&&!head.querySelector(":scope > b,:scope > strong,:scope > h2,:scope > h3,:scope > h4"))return;// 제목 줄 옆 설명만 (본문 문단은 그대로)
+  const q=document.createElement("span");q.className="q59";q.textContent="?";q.title=x;h.replaceWith(q)})}
+let tm=0;const run=()=>{clearTimeout(tm);tm=setTimeout(()=>{try{pass(document.querySelector(".main")||document.body)}catch(e){console.error("[ui]",e)}},80)};
+new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
+})();

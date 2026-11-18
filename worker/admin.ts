@@ -10,20 +10,20 @@ const HTML = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>데이터 관리 · SE EPC</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
-:root{color-scheme:light;--bg:#f3f4f6;--card:#fff;--line:#d9dce2;--text:#111827;--dim:#6b7280;--accent:#2f6fed;--danger:#d7372f;--ok:#15803d;--warn:#b45309}
-@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0f1014;--card:#1a1c22;--line:#2a2d38;--text:#eceef2;--dim:#8a8f9c;--accent:#5b8dff;--danger:#e85a52;--ok:#4ade80;--warn:#fbbf24}}
+:root{color-scheme:light;--bg:#f3f5f8;--card:#fff;--line:#e6e9ef;--text:#0f172a;--dim:#64748b;--sh:0 0 0 1px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.05),0 6px 16px -4px rgba(16,24,40,.08);--accent:#2f6fed;--danger:#d7372f;--ok:#15803d;--warn:#b45309}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0b0d12;--card:#151922;--line:#1e2331;--text:#e8ebf2;--dim:#7f889a;--sh:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.45),0 8px 24px -6px rgba(0,0,0,.6);--accent:#5b8dff;--danger:#e85a52;--ok:#4ade80;--warn:#fbbf24}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Pretendard","Malgun Gothic",system-ui,sans-serif}
 .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}h1{font-size:20px;margin:0 0 2px}.dim{color:var(--dim);font-size:12.5px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+.card{background:var(--card);border:0;box-shadow:var(--sh);border-radius:12px;padding:14px 16px;margin-top:14px}
 .card h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px}.card h2 .dim{font-weight:400}
-.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}.kpi div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.kpi b{display:block;font-size:20px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}.kpi div{background:var(--card);border:0;box-shadow:var(--sh);border-radius:12px;padding:10px 12px}.kpi b{display:block;font-size:20px}
 button,input,select{font:inherit}button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:7px;padding:6px 12px;cursor:pointer}
 button.p{background:var(--accent);border-color:var(--accent);color:#fff}button.d{border-color:var(--danger);color:var(--danger)}button:disabled{opacity:.5;cursor:default}
 input[type=text],input[type=password],input[type=datetime-local],input[type=search]{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:7px;padding:6px 10px}
 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:600;position:sticky;top:0;background:var(--card)}
 .scroll{max-height:420px;overflow:auto}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .tag{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:9px;padding:0 7px;color:var(--dim)}
-.ok{color:var(--ok)}.bad{color:var(--danger)}.warn{color:var(--warn)}.mono{font-family:Consolas,monospace;font-size:12px;word-break:break-all}
+tr.grp td{background:color-mix(in srgb,var(--accent) 5%,transparent)}tr.sub td{font-size:12px;padding-top:3px;padding-bottom:3px}.ok{color:var(--ok)}.bad{color:var(--danger)}.warn{color:var(--warn)}.mono{font-family:Consolas,monospace;font-size:12px;word-break:break-all}
 #gate{max-width:380px;margin:80px auto}.msg{margin-top:8px;font-size:13px}
 </style></head><body>
 <div id="gate" class="card"><h2>데이터 관리 (관리자)</h2><div class="dim">휴지통 복원 · 백업 · 시점 복구. 관리자 비밀번호가 필요합니다.</div>
@@ -35,7 +35,7 @@ table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}th,td{bo
 
  <div class="card"><h2>1. 휴지통 <span class="dim">지운 레코드 원본 · 누가·언제 · 180일 보관</span></h2>
   <div class="row"><input id="tq" type="search" placeholder="이름·삭제자·종류 검색" oninput="drawTrash()"><button onclick="loadTrash()">새로고침</button><span class="dim" id="tinfo"></span><span style="margin-left:auto"></span><button class="p" id="tbtn" onclick="undelete()" disabled>선택 복원</button></div>
-  <div class="scroll"><table><thead><tr><th style="width:28px"><input type="checkbox" onchange="document.querySelectorAll('.tk').forEach(c=>{c.checked=this.checked});pick()"></th><th>삭제 시각</th><th>삭제자</th><th>종류</th><th>이름</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
+  <div class="scroll"><table><thead><tr><th style="width:28px"><input type="checkbox" onchange="document.querySelectorAll('.tg:not(:disabled)').forEach(c=>{c.checked=this.checked});pick()"></th><th>삭제 시각</th><th>삭제자</th><th>종류</th><th>이름</th><th>상태</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
 
  <div class="card"><h2>2. 백업 <span class="dim">매일 03:00 자동 · 수동 · 복원 직전 자동 보관</span></h2>
   <div class="row"><button onclick="snapNow()">지금 백업</button><button onclick="loadSnaps()">새로고침</button><span class="dim">'이 백업으로 복원' = 서버 전체를 그 시점 백업으로 교체 (직전 상태는 자동으로 백업해 둠)</span></div>
@@ -64,10 +64,21 @@ function logout(){sessionStorage.removeItem("epc-admin");PW="";$("app").style.di
 async function start(){$("gate").style.display="none";$("app").style.display="block";loadStatus();loadTrash();loadSnaps();loadAudit()}
 async function loadStatus(){const s=await api("status");$("kpi").innerHTML=[["현재 레코드",s.records.toLocaleString()],["접속 중",s.online+"명"],["휴지통",s.trash.toLocaleString()+"건"],["백업",s.snaps+"개"],["마지막 백업",s.lastSnap?kst(s.lastSnap.at):"없음"],["7일간 차단된 대량 삭제",s.blocked7d+"건"]].map(([l,v])=>'<div><span class="dim">'+l+'</span><b>'+esc(v)+'</b></div>').join("")}
 async function loadTrash(){const j=await api("trash");TR=j.rows;drawTrash()}
-function drawTrash(){const q=$("tq").value.trim();const L=TR.filter(r=>!q||(r.label+" "+r.delBy+" "+(NM[r.c]||r.c)).includes(q));$("tinfo").textContent=L.length+"건"+(L.length<TR.length?" / 전체 "+TR.length:"");
- $("tbody").innerHTML=L.slice(0,1500).map(r=>'<tr><td><input type="checkbox" class="tk" value="'+r.tid+'" onchange="pick()" '+(r.alive?"disabled":"")+'></td><td>'+kst(r.delAt)+'</td><td>'+esc(r.delBy||"-")+'</td><td><span class="tag">'+esc(NM[r.c]||r.c)+'</span></td><td>'+esc(r.label)+'</td><td>'+(r.alive?'<span class="ok">이미 있음</span>':'<span class="dim">삭제됨</span>')+'</td></tr>').join("")||'<tr><td colspan="6" class="dim">휴지통 비어 있음</td></tr>';pick()}
-function pick(){const n=document.querySelectorAll(".tk:checked").length;$("tbtn").disabled=!n;$("tbtn").textContent=n?"선택 복원 ("+n+")":"선택 복원"}
-async function undelete(){const tids=[...document.querySelectorAll(".tk:checked")].map(c=>+c.value);if(!tids.length||!confirm(tids.length+"건을 복원할까요? 접속 중인 화면에 바로 반영됩니다."))return;try{const r=await api("undelete",{method:"POST",body:JSON.stringify({tids})});alert(r.restored+"건 복원");loadTrash();loadStatus();loadAudit()}catch(e){alert(e.message)}}
+let TG=[],TOPEN={};
+// 같은 순간·같은 사람이 지운 것 = 한 묶음 (현장 1곳 삭제 = 현장 + 서류·마일스톤·기성 등 딸린 자료) → 묶음째 선택·복원
+function drawTrash(){const q=$("tq").value.trim();const L=TR.filter(r=>!q||(r.label+" "+r.delBy+" "+(NM[r.c]||r.c)).includes(q));
+ const G=[],GI={};L.forEach(r=>{const k=r.delAt+"|"+r.delBy;let g=GI[k];if(!g){g=GI[k]={k:k,at:r.delAt,by:r.delBy,rows:[]};G.push(g)}g.rows.push(r)});TG=G;
+ $("tinfo").textContent=G.length+"묶음 · "+L.length+"건"+(L.length<TR.length?" / 전체 "+TR.length:"");
+ let h="";G.slice(0,1000).forEach((g,gi)=>{const main=g.rows.find(r=>r.c==="projects")||g.rows.find(r=>r.c==="plants")||g.rows.find(r=>r.c==="erp")||g.rows[0];const dead=g.rows.filter(r=>!r.alive).length,multi=g.rows.length>1;
+  const cnt={};g.rows.forEach(r=>{if(r!==main){const n=NM[r.c]||r.c;cnt[n]=(cnt[n]||0)+1}});const sum=Object.keys(cnt).map(k=>k+" "+cnt[k]).join(" · ");
+  h+='<tr class="'+(multi?"grp":"")+'"><td><input type="checkbox" class="tg" data-g="'+gi+'" onchange="pick()" '+(dead?"":"disabled")+'></td><td>'+kst(g.at)+'</td><td>'+esc(g.by||"-")+'</td><td><span class="tag">'+esc(NM[main.c]||main.c)+'</span></td><td><b>'+esc(main.label)+'</b>'+(multi?' <span class="dim">+ 함께 지워진 '+(g.rows.length-1)+'건 ('+esc(sum)+')</span> <a href="javascript:void 0" class="dim" onclick="tgO('+gi+')">'+(TOPEN[g.k]?"접기":"펼쳐 보기")+'</a>':'')+'</td><td>'+(!dead?'<span class="ok">이미 있음</span>':dead<g.rows.length?'<span class="warn">일부만 복원됨 · 남은 '+dead+'건</span>':'<span class="dim">삭제됨</span>')+'</td></tr>';
+  if(multi&&TOPEN[g.k])g.rows.forEach(r=>{h+='<tr class="sub"><td></td><td></td><td></td><td><span class="tag">'+esc(NM[r.c]||r.c)+'</span></td><td class="dim">'+esc(r.label)+'</td><td>'+(r.alive?'<span class="ok">이미 있음</span>':'<span class="dim">삭제됨</span>')+'</td></tr>'})});
+ $("tbody").innerHTML=h||'<tr><td colspan="6" class="dim">휴지통 비어 있음</td></tr>';pick()}
+function tgO(i){const k=TG[i].k;TOPEN[k]=!TOPEN[k];drawTrash()}
+function selT(){const s=[];document.querySelectorAll(".tg:checked").forEach(c=>{TG[+c.dataset.g].rows.forEach(r=>{if(!r.alive)s.push(r.tid)})});return s}
+function pick(){const n=selT().length,g=document.querySelectorAll(".tg:checked").length;$("tbtn").disabled=!n;$("tbtn").textContent=n?"선택 복원 ("+g+"묶음 · "+n+"건)":"선택 복원"}
+async function undelete(){const tids=selT();if(!tids.length)return;const pj=[];document.querySelectorAll(".tg:checked").forEach(c=>{TG[+c.dataset.g].rows.forEach(r=>{if(r.c==="projects"&&!r.alive)pj.push(r.label)})});
+ if(!confirm((pj.length?"현장 "+pj.join(", ")+" 와(과) 함께 지워진 자료까지 ":"")+tids.length+"건을 복원하시겠습니까? 접속 중인 화면에 바로 반영됩니다."))return;try{const r=await api("undelete",{method:"POST",body:JSON.stringify({tids})});alert(r.restored+"건 복원"+(r.erp?" · 실적관리 연결 "+r.erp+"곳 되돌림":""));loadTrash();loadStatus();loadAudit()}catch(e){alert(e.message)}}
 async function loadSnaps(){const j=await api("snaps");const K={daily:"매일 자동",manual:"수동","pre-restore":"복원 직전"};
  $("sbody").innerHTML=j.rows.map(r=>'<tr><td>'+kst(r.at)+'</td><td><span class="tag">'+(K[r.kind]||r.kind)+'</span></td><td>'+Number(r.n).toLocaleString()+'</td><td>'+Math.round(r.size/1024)+' KB</td><td style="text-align:right"><button onclick="dl(\\''+r.sid+'\\')">받기</button> <button class="d" onclick="restoreSnap(\\''+r.sid+'\\',\\''+kst(r.at)+'\\')">이 백업으로 복원</button></td></tr>').join("")||'<tr><td colspan="5" class="dim">백업 없음 · 매일 03:00 자동 생성 (지금 백업으로 바로 만들 수 있음)</td></tr>'}
 async function snapNow(){try{const r=await api("snap-now",{method:"POST"});alert("백업 완료 · "+r.n+"건");loadSnaps();loadStatus();loadAudit()}catch(e){alert(e.message)}}

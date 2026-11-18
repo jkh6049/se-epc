@@ -7986,9 +7986,73 @@ function wkNums58(){const f=$("erpFrame"),w=f&&f.contentWindow;
 // 실적 요약·실적 분석(올해)·사업부 파이프라인의 현장별 누적 매출액·계약잔액도 같은 엔진 값 (올해 = 주간보고 기준일 연도일 때)
 {const _pr58=pfRow;pfRow=function(e,Y){const r=_pr58.apply(this,arguments);try{const W=wkNums58();const x=W&&W.site&&String(Y)===W.D.slice(0,4)?W.site[e.id]:null;if(x&&r){r.cum=Object.assign({},r.cum,{rev:x.rev});r.backlog=(r.C||0)-x.rev;if(r.C)r.prog=x.rev/r.C*100}}catch(err){}return r}}
 {const _pd58=pp50Data;pp50Data=function(){const D=_pd58.apply(this,arguments);try{const W=wkNums58();if(W&&W.site){let rev=0;D.rows.forEach(r=>{if(r.pre)return;const e=erpLinkOf(r.p);const x=e&&W.site[e.id];if(x)r.rev=x.rev;rev+=r.rev||0});D.k.rev=rev;D.k.rate=D.k.C?rev/D.k.C*100:0;D.k.back=D.k.C-rev}}catch(err){}return D}}
+// ===================== v59c (2026-11-18): 변경 이력 탭 — 누가·언제·무엇을 추가/수정/삭제했는지 (사업지원 요청: 무분별한 추가·삭제 확인) =====================
+// 서버(worker hist 표)가 모든 수정 묶음을 받을 때 기록 → 여기서는 열람만. 누가 = 각자 '내 정보' 이름 (미설정이면 기기 번호)
+const HC59={projects:"현장",ms:"마일스톤",pay:"기성·수금·지급",tasks:"Task",recur:"반복 Task",events:"일정",plants:"발전소",insp:"점검",as:"A/S",vendors:"협력사",logs:"진행사항",docs:"서류",bills:"청구",claims:"클레임·대관",sites:"사이트",weekly:"주간보고",forms:"사내 양식",subs:"용역사",replies:"답글",erp:"실적관리(ERP)",meta:"공통 설정"};
+const HOP59={add:["추가","a"],put:["수정","u"],del:["삭제","d"],load:["전체 불러오기","l"]};
+const HK59={name:"이름",stage:"단계",amount:"계약금액",client:"발주처",capacity:"용량",contractDate:"계약일",deadline:"준공기한",status:"상태",planDate:"계획일",doneDate:"완료일",owner:"담당",assignee:"담당",title:"제목",text:"내용",memo:"메모",note:"비고",due:"기한",date:"일자",type:"유형",site:"사업지",award:"수주 상태",closed:"종료",budget:"실행예산",handoff:"인계",pmAt:"인계일",pmBy:"인계자",items:"인수 점검",biz57:"사업 개요",ov:"",equip:"기자재",risks:"리스크",docs:"인수인계 자료",parties:"계약 구도",collect:"수금 조건",pay:"지급 조건",fundGap:"자금 부담",etc:"기타 직접비",etcNote:"기타 직접비 비고",projectId:"현장",field:"분야",scope:"범위",payTerms:"지급 조건",label:"구분",dir:"방향",chk:"인수 확인",st:"상태",main:"원청 계약",sub:"협력업체 계약",risk:"리스크·대응",item:"항목",maker:"제조사",model:"모델",qty:"수량",file:"파일·위치",moduleMaker:"모듈",inverterMaker:"인버터",bid57:"입찰",dev57:"사업개발",pref57:"우선협상"};
+function hk59(k){const bz=typeof BZF57!=="undefined"?Object.fromEntries(BZF57.map(f=>[f[0],f[1]])):{};const ho=typeof HO_ITEMS!=="undefined"?Object.fromEntries(HO_ITEMS):{};
+ return k.split(".").map((x,i,a)=>/^\d+$/.test(x)?`${+x+1}행`:((a[i-1]==="ov"&&bz[x])||(a[i-1]==="items"&&ho[x])||(x in HK59?HK59[x]:x))).filter(Boolean).join(" › ")}
+let H59={rows:[],names:[],since:"",more:false,f:{pid:"",c:"",who:"",op:"",q:"",days:"30"},loading:false,open:{}};
+function hist59Q(before){const f=H59.f,u=new URLSearchParams();if(before)u.set("before",before);["pid","c","who","op","q"].forEach(k=>{if(f[k])u.set(k,f[k])});if(f.days!=="all")u.set("since",new Date(Date.now()-(+f.days)*864e5).toISOString());u.set("limit","200");return"/api/hist?"+u}
+async function hist59Load(more){if(H59.loading)return;H59.loading=true;if(!more)renderHist59();
+ try{const r=await fetch(hist59Q(more?H59.rows[H59.rows.length-1].hid:0),{credentials:"same-origin",cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const j=await r.json();H59.rows=more?H59.rows.concat(j.rows):j.rows;H59.names=j.names||[];H59.since=j.since||"";H59.more=!!j.more;H59.err=""}
+ catch(e){H59.err="이력을 불러오지 못했습니다 ("+e.message+") · 서버에 연결된 상태에서만 볼 수 있습니다";if(!more)H59.rows=[]}
+ H59.loading=false;renderHist59()}
+function hist59Set(k,v){H59.f[k]=v;hist59Load()}
+function hist59Go(pid){H59.f=Object.assign(H59.f,{pid:pid||"",c:"",who:"",op:"",q:""});switchTab("hist")}
+function hist59Pn(pid){const p=pid&&proj(pid);return p?p.name:pid?"(삭제된 현장)":""}
+function hist59Ch(r){if(r.op==="add")return'<span class="hint">새로 추가</span>';if(r.op==="del")return'<span class="hint">삭제 · 원본은 휴지통에 180일 보관 (복원은 관리자)</span>';if(r.op==="load")return`<span class="hint">${esc(r.label)}</span>`;
+ let ch=[];try{ch=JSON.parse(r.ch||"[]")}catch(e){}if(!ch.length)return"";const op=H59.open[r.hid],L=op?ch:ch.slice(0,3);
+ const V=v=>v===""||v==null?'<span class="hint">(빈칸)</span>':esc(v);
+ return L.map(x=>`<div class="h59-c"><b>${esc(hk59(x.k))}</b> ${V(x.f)} <span class="hint">→</span> ${V(x.t)}</div>`).join("")+(ch.length>3?`<a href="javascript:void 0" class="hint" onclick="H59.open[${r.hid}]=!H59.open[${r.hid}];renderHist59()">${op?"접기":`외 ${ch.length-3}개 더 보기`}</a>`:"")}
+function renderHist59(){const el=$("tab-hist");if(!el)return;const f=H59.f,me=meName();
+ const pl=projects.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),"ko"));
+ const S=(k,opts)=>`<select onchange="hist59Set('${k}',this.value)">${opts.map(([v,l])=>`<option value="${esc(v)}" ${f[k]===v?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
+ const cnt={add:0,put:0,del:0};H59.rows.forEach(r=>{if(cnt[r.op]!=null)cnt[r.op]++});
+ const fmt=at=>{const d=new Date(at);if(isNaN(d))return esc(at||"");const k=new Date(d.getTime()+9*3600e3).toISOString();return`${k.slice(5,10).replace("-","/")} ${k.slice(11,16)}`};
+ el.innerHTML=`<div class="panel h59-f">
+ ${me?"":`<div class="g59" style="margin:0 0 10px"><b>내 이름이 설정되지 않음</b> 내가 수정한 기록이 기기 번호로 남습니다 → <a href="javascript:void 0" onclick="meEdit()">내 정보에서 이름 설정</a></div>`}
+ <div class="h59-row">${S("days",[["7","최근 7일"],["30","최근 30일"],["90","최근 90일"],["all","전체 (1년 보관)"]])}${S("op",[["","추가·수정·삭제 전체"],["add","추가만"],["put","수정만"],["del","삭제만"]])}${S("c",[["","대상 전체"],...Object.entries(HC59)])}${S("pid",[["","현장 전체"],...pl.map(p=>[p.id,p.name])])}${S("who",[["","작성자 전체"],...H59.names.map(n=>[n,n||"(이름 없음)"])])}
+ <input placeholder="검색 (이름·내용)" value="${esc(f.q)}" onchange="hist59Set('q',this.value.trim())" style="width:180px"><button class="btn btn-sm btn-secondary" onclick="hist59Load()">새로고침</button></div>
+ <div class="hint" style="margin-top:8px">${H59.loading?"불러오는 중…":`${H59.rows.length}건${H59.more?"+":""} · 추가 ${cnt.add} · 수정 ${cnt.put} · 삭제 ${cnt.del}`} · 작성자 = 각자 '내 정보'에 설정한 이름 · 기록 시작 ${H59.since?esc(H59.since.slice(0,10)):"-"} (그 전은 삭제 기록만 · 휴지통 기준)</div></div>
+ ${H59.err?`<div class="empty">${esc(H59.err)}</div>`:""}
+ <div class="panel" style="padding:0;overflow-x:auto"><table class="h59-t"><colgroup><col style="width:96px"><col style="width:110px"><col style="width:64px"><col style="width:24%"><col style="width:18%"><col></colgroup>
+ <thead><tr><th>일시</th><th>작성자</th><th>구분</th><th>대상</th><th>현장</th><th>바뀐 내용</th></tr></thead><tbody>
+ ${H59.rows.map(r=>{const o=HOP59[r.op]||[r.op,""];const pn=hist59Pn(r.pid);const live=r.c==="projects"?proj(r.id):null;
+  return`<tr><td class="hint">${fmt(r.at)}</td><td>${r.who?esc(r.who):'<span class="hint">(이름 없음)</span>'}</td><td><span class="h59-op ${o[1]}">${o[0]}</span></td><td><span class="hint">${esc(HC59[r.c]||r.c)}</span><div>${esc(r.label||"")}</div></td><td>${pn?(proj(r.pid)?`<a href="javascript:void 0" onclick="openDetail('${esc(r.pid)}')">${esc(pn)}</a>`:`<span class="hint">${esc(pn)}</span>`):'<span class="hint">-</span>'}</td><td>${hist59Ch(r)}</td></tr>`}).join("")||(!H59.loading&&!H59.err?`<tr><td colspan="6" class="empty">조건에 맞는 기록 없음</td></tr>`:"")}
+ </tbody></table>${H59.more?`<div style="padding:10px;text-align:center"><button class="btn btn-sm btn-secondary" onclick="hist59Load(true)">더 보기</button></div>`:""}</div>`}
+// 탭 등록 (공통 › 변경 이력)
+TAB_TITLE.hist=["변경 이력","누가·언제·무엇을 추가·수정·삭제했는지 · 직원 누구나 열람"];
+{const v=document.querySelector('.sb-item[data-tab="vendors"]');if(v&&!document.querySelector('.sb-item[data-tab="hist"]'))v.insertAdjacentHTML("afterend",'<button class="sb-item" data-tab="hist" onclick="switchTab(\'hist\')"><span class="ic">↺</span><span class="lb">변경 이력</span></button>')}
+{const te=$("tab-pipe")||$("tab-erp");if(te&&!$("tab-hist"))te.insertAdjacentHTML("afterend",'<div id="tab-hist" style="display:none"></div>')}
+{const _st59=switchTab;switchTab=function(n){const e=$("tab-hist");if(e)e.style.display="none";const r=_st59.apply(this,arguments);if(n==="hist"&&e){e.style.display="block";hist59Load()}return r}}
+// 현장 상세 위에 '변경 이력' 바로가기 (그 현장만)
+{const _od59=openDetail;openDetail=function(id){const r=_od59.apply(this,arguments);try{const s=$("d57")||(()=>{const sel=$("dStageSel");if(!sel)return null;let x=$("h59d");if(!x){x=document.createElement("span");x.id="h59d";x.style.cssText="display:inline-flex;gap:6px;align-items:center;margin-right:6px";sel.parentNode.insertBefore(x,sel.parentNode.firstChild)}x.innerHTML="";return x})();if(s&&!s.querySelector(".h59-go"))s.insertAdjacentHTML("beforeend",`<button class="btn btn-sm btn-secondary h59-go" onclick="hist59Go('${id}')" title="이 현장과 딸린 Task·마일스톤·기성·용역사 등의 추가·수정·삭제 기록">변경 이력</button>`)}catch(e){}return r}}
+(()=>{const st=document.createElement("style");st.textContent=`
+.h59-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.h59-row select{max-width:220px}
+.h59-t{width:100%;border-collapse:collapse;table-layout:fixed;min-width:900px}.h59-t th{text-align:left;font-size:12px;color:var(--text-dim);padding:8px 10px;border-bottom:1px solid var(--border);background:var(--bg-elev2)}
+.h59-t td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:12.5px;overflow-wrap:anywhere}
+.h59-c{line-height:1.5}.h59-c b{font-weight:600;margin-right:4px}
+.h59-op{font-size:11px;padding:1px 8px;border-radius:9px;border:1px solid var(--border);white-space:nowrap}.h59-op.a{color:var(--success);border-color:color-mix(in srgb,var(--success) 40%,transparent)}.h59-op.u{color:var(--accent)}.h59-op.d{color:var(--danger,#c0392b);border-color:color-mix(in srgb,var(--danger,#c0392b) 40%,transparent)}
+`;document.head.appendChild(st)})();
+// ===================== v59d (2026-11-18): 현장 탭 구간 선택 = 드롭다운 (팀을 바꿀 때마다 버튼 줄 길이가 바뀌어 위치가 흔들리던 문제) · 변경 이력 묶음 표시 =====================
+// 변경 이력: 같은 순간·같은 사람의 추가/삭제 묶음(현장 삭제 시 딸린 서류·마일스톤 등)은 한 줄로 → 펼쳐 보기
+{const _rh59=renderHist59;renderHist59=function(){const rows=H59.rows,PN={};rows.forEach(r=>{if(r.c==="projects")PN[r.id]=r.label});H59.PN=PN;
+ const G=[];for(const r of rows){const g=G[G.length-1];if(g&&r.op!=="put"&&g.op===r.op&&g.at===r.at&&g.who===r.who)g.rows.push(r);else G.push({op:r.op,at:r.at,who:r.who,rows:[r]})}
+ const view=[];G.forEach(g=>{if(g.rows.length===1){view.push(g.rows[0]);return}const main=g.rows.find(r=>r.c==="projects")||g.rows[0];const key="g"+g.rows[0].hid;const by={};g.rows.forEach(r=>{if(r!==main)by[r.c]=(by[r.c]||0)+1});
+  view.push(Object.assign({},main,{_g:g.rows.length,_key:key,_sum:Object.entries(by).map(([c,n])=>`${HC59[c]||c} ${n}`).join(" · ")}));if(H59.open[key])g.rows.filter(r=>r!==main).forEach(r=>view.push(Object.assign({},r,{_sub:1})))});
+ const keep=H59.rows;H59.rows=view;try{_rh59.apply(this,arguments)}finally{H59.rows=keep}
+ const sm=document.querySelector("#tab-hist .h59-f .hint:last-child");const c={add:0,put:0,del:0};keep.forEach(r=>{if(c[r.op]!=null)c[r.op]++});if(sm)sm.innerHTML=sm.innerHTML.replace(/^\d+건\+? · 추가 \d+ · 수정 \d+ · 삭제 \d+/,`기록 ${keep.length}건${H59.more?"+":""} (${G.length}줄) · 추가 ${c.add} · 수정 ${c.put} · 삭제 ${c.del}`)}}
+hist59Pn=function(pid){const p=pid&&proj(pid);return p?p.name:pid?((H59.PN||{})[pid]?`${H59.PN[pid]} (삭제됨)`:"(삭제된 현장)"):""};
+{const _hc59=hist59Ch;hist59Ch=function(r){if(r._g)return`<span class="hint">${HOP59[r.op]?HOP59[r.op][0]:""} 묶음 ${r._g}건${r._sum?" · 함께: "+esc(r._sum):""}</span> <a href="javascript:void 0" class="hint" onclick="H59.open['${r._key}']=!H59.open['${r._key}'];renderHist59()">${H59.open[r._key]?"접기":"펼쳐 보기"}</a>${r.op==="del"?'<div class="hint">원본은 휴지통에 180일 보관 (복원은 관리자)</div>':""}`;if(r._sub)return'<span class="hint">↳ 같은 묶음</span>';return _hc59.apply(this,arguments)}}
+(()=>{const st=document.createElement("style");st.textContent=`
+`;document.head.appendChild(st)})();
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();
 </script>
 <script src="/live.js"></script>
+<script src="/ui.js"></script>
+<script src="/mgr.js"></script>
 </body></html>
