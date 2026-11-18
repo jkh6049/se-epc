@@ -147,7 +147,7 @@ try{erpSkin()}catch(e){}
 const NUM=/^[-+−]?\(?[\d,]+(\.\d+)?\)?\s*(억|억원|원|만|만원|%|%p|건|곳|개|명|일|kW|kWp|MW|회|차)?$/;
 function pass(root){
  root.querySelectorAll("table:not([data-u59])").forEach(t=>{t.dataset.u59=1;if(!t.tHead){const tr=t.rows[0];if(tr&&tr.cells.length>1&&[...tr.cells].every(c=>c.tagName==="TH"))tr.classList.add("hd59")}});
- root.querySelectorAll("td:not([data-u59])").forEach(td=>{td.dataset.u59=1;if(td.children.length>1)return;const x=td.textContent.trim();if(x&&x!=="-"&&NUM.test(x))td.classList.add("num59")});
+ root.querySelectorAll("td:not([data-u59])").forEach(td=>{td.dataset.u59=1;if(td.querySelector(":scope>.hl-bar")){td.classList.add("bar60");[...td.childNodes].forEach(n=>{if(n.nodeType===3&&n.textContent.trim()){const sp=document.createElement("span");sp.className="pc60";sp.textContent=n.textContent.trim();n.replaceWith(sp)}});return}if(td.children.length>1)return;const x=td.textContent.trim();if(x&&x!=="-"&&NUM.test(x))td.classList.add("num59")});
  root.querySelectorAll(".panel .hint:not([data-u59]),.pf-box h4 .hint:not([data-u59]),.hl-box .hint:not([data-u59]),.bz57-h .hint:not([data-u59]),.m59-h .hint:not([data-u59])").forEach(h=>{h.dataset.u59=1;
   if(h.children.length||h.closest("td,li,label,button,.modal-actions,.s59-b,.form-row"))return;const x=h.textContent.trim();if(x.length<40)return;
   if(h.tagName!=="SPAN")return;const head=h.parentElement,rest=head?head.textContent.trim().length-x.length:0;if(!head||rest<2||rest>60)return;if(!/^H[1-6]$/.test(head.tagName)&&!head.querySelector(":scope > b,:scope > strong,:scope > h2,:scope > h3,:scope > h4")&&![...head.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))return;// 제목 줄 옆 설명만 (본문 문단은 그대로)
@@ -204,3 +204,38 @@ function deco(doc){doc.querySelectorAll(".kpi:not([data-i60])").forEach(k=>{k.da
 const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("ui-kpi");if(!s){s=doc.createElement("style");s.id="ui-kpi";doc.head.appendChild(s);new MutationObserver(()=>{try{deco(doc)}catch(e){}}).observe(doc.body,{childList:true,subtree:true})}s.textContent=css;deco(doc)}catch(e){}return r};
 try{erpSkin()}catch(e){}
 })();
+// ===================== 현장·협력사 카드 · 막대 칸 · 다크 막대 (v60d) =====================
+(function(){const st=document.createElement("style");st.id="ui-cards";st.textContent=`
+/* 막대 칸: 막대는 왼쪽부터 같은 길이 · % 는 오른쪽 고정 폭 */
+td.bar60{text-align:left!important;white-space:nowrap}
+td.bar60>.hl-bar{display:inline-block!important;vertical-align:middle;width:calc(100% - 50px)!important;min-width:40px}
+.pc60{display:inline-block;width:44px;text-align:right;vertical-align:middle;font-weight:700;font-variant-numeric:tabular-nums}
+/* 다크 막대 더 또렷하게 */
+:root[data-theme="dark"]{--trk:rgba(255,255,255,.17);--trk-bd:rgba(255,255,255,.14);--fill:linear-gradient(90deg,#5b8dff,#a9c4ff)}
+:root[data-theme="dark"] :is(.hl-bar,.pbar,.kb36,.bl38b,.ho-bar,.m59-bar)>i{box-shadow:0 0 8px rgba(107,155,255,.55)}
+/* 현장 카드 */
+.pc2{padding:16px!important;gap:10px!important}
+.pc2 .hd{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pc2 .hd>span:not(:empty){border-radius:99px!important;font-size:11.5px!important;font-weight:700!important;padding:2px 9px!important;line-height:1.5}
+.pc2 .hd .tg{background:var(--bg-tile)!important;border:1px solid var(--bd-tile)!important;color:var(--text-dim)!important}
+.pc2 .nm{font-size:15.5px!important;font-weight:800!important;line-height:1.35;color:var(--text)}
+.pc2 .sub{font-size:12.5px!important;color:var(--text-dim)!important;margin-top:2px}
+.pc2 .kv3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px!important;border:0!important;padding:0!important;background:none!important}
+.pc2 .kv3>div{background:var(--bg-tile)!important;border:1px solid var(--bd-tile)!important;border-radius:9px;padding:8px 10px!important;min-width:0}
+.pc2 .kv3 .l{font-size:11.5px!important;color:var(--text-dim)!important;line-height:1.35;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;word-break:keep-all}
+.pc2 .kv3>div::before,.pc2 .kv3>div::after{display:none!important}.pc2 .kv3 .l,.pc2 .kv3 .v{border:0!important;padding:0!important}.pc2 .kv3>div{border-left:1px solid var(--bd-tile)!important;border-right:1px solid var(--bd-tile)!important}
+.pc2 .kv3 .v{font-size:15px!important;font-weight:800!important;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.3;overflow-wrap:anywhere}.pc2 .kv3 .v span{display:block;font-size:11.5px!important}
+.pc2 .stg{display:flex!important;align-items:center;gap:8px;font-size:13px}
+.pc2 .stg>b{flex:0 0 auto;padding:2px 10px;border-radius:99px;background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:800;white-space:nowrap}
+.pc2 .stg .pbar{flex:1 1 auto;min-width:40px}
+.pc2 .stg>span:not(.pbar):not(.hint){font-weight:800;font-variant-numeric:tabular-nums}
+.pc2 .ln{font-size:12.5px!important;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc2 .ft{border-top:1px solid var(--bd-inner)!important;padding-top:8px!important;margin-top:2px;display:flex;flex-direction:column;gap:2px}
+/* 협력사(발주처·시공·설계·기자재) 카드 */
+.vg46-card{padding:16px!important}
+.vg46-card .vg46-k{border-radius:99px!important;font-size:11.5px!important;font-weight:800!important;padding:2px 10px!important;background:color-mix(in srgb,currentColor 12%,transparent)!important;border-color:transparent!important}
+.vg46-card .title{font-size:15.5px!important;font-weight:800!important;margin-top:6px;color:var(--text)}
+.vg46-card .meta{font-size:12.5px!important;color:var(--text-dim)!important}
+.vg46-card .st{border-radius:99px!important;font-size:11.5px!important;font-weight:700!important;padding:2px 9px!important;border-color:transparent!important}
+:root[data-theme="dark"] .pc2 .hd>span:not(:empty):not(.tg){filter:brightness(1.25) saturate(1.1)}
+`;document.head.appendChild(st)})();
