@@ -150,8 +150,57 @@ function pass(root){
  root.querySelectorAll("td:not([data-u59])").forEach(td=>{td.dataset.u59=1;if(td.children.length>1)return;const x=td.textContent.trim();if(x&&x!=="-"&&NUM.test(x))td.classList.add("num59")});
  root.querySelectorAll(".panel .hint:not([data-u59]),.pf-box h4 .hint:not([data-u59]),.hl-box .hint:not([data-u59]),.bz57-h .hint:not([data-u59]),.m59-h .hint:not([data-u59])").forEach(h=>{h.dataset.u59=1;
   if(h.children.length||h.closest("td,li,label,button,.modal-actions,.s59-b,.form-row"))return;const x=h.textContent.trim();if(x.length<40)return;
-  if(h.tagName!=="SPAN")return;const head=h.parentElement,rest=head?head.textContent.trim().length-x.length:0;if(!head||rest<2||rest>60)return;if(!/^H[1-6]$/.test(head.tagName)&&!head.querySelector(":scope > b,:scope > strong,:scope > h2,:scope > h3,:scope > h4"))return;// 제목 줄 옆 설명만 (본문 문단은 그대로)
+  if(h.tagName!=="SPAN")return;const head=h.parentElement,rest=head?head.textContent.trim().length-x.length:0;if(!head||rest<2||rest>60)return;if(!/^H[1-6]$/.test(head.tagName)&&!head.querySelector(":scope > b,:scope > strong,:scope > h2,:scope > h3,:scope > h4")&&![...head.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))return;// 제목 줄 옆 설명만 (본문 문단은 그대로)
   const q=document.createElement("span");q.className="q59";q.textContent="?";q.title=x;h.replaceWith(q)})}
-let tm=0;const run=()=>{clearTimeout(tm);tm=setTimeout(()=>{try{pass(document.querySelector(".main")||document.body)}catch(e){console.error("[ui]",e)}},80)};
+const run=()=>{try{pass(document.querySelector(".main")||document.body)}catch(e){console.error("[ui]",e)}};// 그리기 직전 (마이크로태스크) — 늦게 적용하면 표가 한 번 움직여 보임
 new MutationObserver(run).observe(document.body,{childList:true,subtree:true});run();
+})();
+// ===================== 실무 화면도 사업부 현황과 같은 모양 (2026-11-18 v60b) =====================
+// 숫자 칸 4종(.hl-kpi .k · .stat · .sk24 · .kpi) = 색 아이콘 블록 + 옅은 색조 + 28px 숫자 · 카드 제목 15.5px + 개수는 오른쪽 둥근 칩
+// 막대 6종 = 같은 7px 둥근 막대 + 0%도 보이는 바탕 · 일자 칸 줄바꿈 금지
+(function(){
+const css=`
+:root{--trk:#e3e8ef;--trk-bd:rgba(16,24,40,.06)}
+:root[data-theme="dark"]{--trk:rgba(255,255,255,.10);--trk-bd:rgba(255,255,255,.08)}
+/* 숫자 칸 */
+:is(.hl-kpi .k,.pf-kpi .k,.stat,.sk24,.main .kpi){background:color-mix(in srgb,var(--tc,var(--accent)) 5%,var(--bg-elev))!important;padding:14px 16px!important;border-radius:12px!important;display:flex;flex-direction:column;gap:2px;min-width:0}
+:is(.hl-kpi .k>.l,.pf-kpi .k>.l,.stat>.label,.sk24>.l,.main .kpi>.k){display:flex;align-items:center;font-size:12.5px!important;font-weight:600!important;color:var(--text-dim)!important;letter-spacing:0;text-transform:none}
+:is(.hl-kpi .k>.v,.pf-kpi .k>.v,.stat>.value,.sk24>.v,.main .kpi>.v){font-size:28px!important;font-weight:800!important;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:8px;line-height:1.15}
+:is(.hl-kpi .k>.s,.pf-kpi .k>.s,.sk24>.s,.main .kpi>.s){font-size:12px!important;color:var(--text-dim)!important;line-height:1.45}
+.ic59{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;background:var(--tc,var(--accent));color:#fff;font-style:normal;font-size:13px;font-weight:800;box-shadow:0 4px 10px -3px color-mix(in srgb,var(--tc,var(--accent)) 70%,transparent);margin-right:9px}
+/* 카드 제목 · 개수 칩 */
+.td-box>.h{display:flex;align-items:center;gap:8px;font-size:15px!important;font-weight:800!important;color:var(--text);margin-bottom:8px}
+.td-box>.h>b{margin-left:auto;min-width:28px;height:24px;padding:0 9px;border-radius:99px;background:var(--bg-elev2);border:1px solid var(--border);display:inline-grid;place-items:center;font-size:13px!important;font-weight:800;font-variant-numeric:tabular-nums}
+:is(.pf-box>h4,.pg-ch>b,.rx-h>b){font-size:15.5px!important;font-weight:800!important;color:var(--text)}
+/* 막대 */
+:is(.hl-bar,.pbar,.kb36,.bl38b,.ho-bar,.m59-bar){height:7px!important;border-radius:99px!important;background:var(--trk)!important;box-shadow:inset 0 0 0 1px var(--trk-bd);overflow:hidden}
+:is(.hl-bar,.pbar,.kb36,.bl38b,.ho-bar,.m59-bar)>i{border-radius:99px!important;height:100%}
+:is(.hl-bar,.kb36,.bl38b,.ho-bar,.m59-bar)>i:not([style*="background"]){background:var(--fill)!important}
+/* 일자 칸 */
+td.dt59{white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}td.sh59{white-space:nowrap}
+.hl-box>.sec-h{font-size:15.5px!important;font-weight:800!important;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+`;
+const st=document.createElement("style");st.id="ui-rules-b";st.textContent=css;document.head.appendChild(st);
+const IC=[[/미수|연체|지연|마감 지남|긴급|재계획|초과/,"!","#dc2626"],[/수주/,"★","#d97706"],[/매출/,"↗","#4f46e5"],[/수금|입금/,"₩","#16a34a"],[/잔고|잔액/,"◫","#0e9fb8"],[/기성|청구|계산서/,"₩","#0e9fb8"],[/현장|건수/,"▣","#2f6fed"],[/계약/,"◫","#0e9fb8"],[/마진|원가율|이익|률|%/,"%","#7c3aed"],[/Task|할 일|업무/,"☑","#2f6fed"],[/일정|마일스톤|예정/,"▦","#0891b2"],[/발전소|O&M|점검|보증|AS/,"⚙","#0f8a7e"],[/업체|협력|파트너/,"☷","#64748b"],[/공정|CPI|SPI/,"◔","#4f46e5"]];
+const DATE=/^(\d{4}-)?\d{2}-\d{2}$|^\d{1,2}\/\d{1,2}$/;
+function deco(root){
+ root.querySelectorAll(".hl-kpi .k:not([data-i60]),.pf-kpi .k:not([data-i60]),.stat:not([data-i60]),.sk24:not([data-i60]),.main .kpi:not([data-i60])").forEach(k=>{k.dataset.i60=1;const lb=k.querySelector(":scope>.l,:scope>.label,:scope>.k");if(!lb||lb.querySelector(".ic59"))return;const t=lb.textContent;const m=IC.find(x=>x[0].test(t))||[0,"•","#2f6fed"];k.style.setProperty("--tc",m[2]);lb.insertAdjacentHTML("afterbegin",`<i class="ic59" aria-hidden="true">${m[1]}</i>`)});
+ root.querySelectorAll("td:not([data-d60])").forEach(td=>{td.dataset.d60=1;if(td.children.length)return;const x=td.textContent.trim();if(DATE.test(x))td.classList.add("dt59");else if(x.length&&x.length<=5&&!/s/.test(x))td.classList.add("sh59")})}
+// 화면이 그려질 때 바로 (그린 뒤 늦게 바꾸면 테마 전환 때 표가 한 번 움직여 보임)
+new MutationObserver(()=>{try{deco(document.querySelector(".main")||document.body)}catch(e){}}).observe(document.body,{childList:true,subtree:true});
+try{deco(document.querySelector(".main")||document.body)}catch(e){}
+})();
+// ===================== 실적관리 프레임(주간보고·경영보고)도 같은 숫자 칸·막대 (v60c) =====================
+(function(){
+const IC=[[/미수|연체|지연|초과/,"!","#dc2626"],[/수주/,"★","#d97706"],[/매출/,"↗","#4f46e5"],[/수금|입금/,"₩","#16a34a"],[/잔고|잔액/,"◫","#0e9fb8"],[/기성|청구|계산서/,"₩","#0e9fb8"],[/현장|건수/,"▣","#2f6fed"],[/계약/,"◫","#0e9fb8"],[/마진|원가율|이익|률|%/,"%","#7c3aed"],[/공정|RAG/,"◔","#4f46e5"]];
+const css=`.kpi{background:color-mix(in srgb,var(--tc,var(--brand)) 5%,var(--card))!important;padding:14px 16px!important;border-radius:12px!important}
+.kpi::before{display:none!important}
+.kpi>.k,.kpi>.l{display:flex;align-items:center;font-size:12.5px!important;font-weight:600!important;color:var(--sub)!important}
+.kpi>.v{font-size:28px!important;font-weight:800!important;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:8px}
+.kpi>.s{font-size:12px!important}
+.ic59{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;background:var(--tc,var(--brand));color:#fff;font-style:normal;font-size:13px;font-weight:800;box-shadow:0 4px 10px -3px color-mix(in srgb,var(--tc,var(--brand)) 70%,transparent);margin-right:9px}
+@media print{.ic59{display:none}.kpi{background:#fff!important}}`;
+function deco(doc){doc.querySelectorAll(".kpi:not([data-i60])").forEach(k=>{k.dataset.i60=1;const lb=k.querySelector(":scope>.k,:scope>.l");if(!lb||lb.querySelector(".ic59"))return;const m=IC.find(x=>x[0].test(lb.textContent))||[0,"•","#2f6fed"];k.style.setProperty("--tc",m[2]);lb.insertAdjacentHTML("afterbegin",`<i class="ic59" aria-hidden="true">${m[1]}</i>`)})}
+const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("ui-kpi");if(!s){s=doc.createElement("style");s.id="ui-kpi";doc.head.appendChild(s);new MutationObserver(()=>{try{deco(doc)}catch(e){}}).observe(doc.body,{childList:true,subtree:true})}s.textContent=css;deco(doc)}catch(e){}return r};
+try{erpSkin()}catch(e){}
 })();
