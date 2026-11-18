@@ -243,25 +243,30 @@ td.bar60>.hl-bar{display:inline-block!important;vertical-align:middle;width:calc
 // 카드·표·글자는 그대로, 화면 바탕만. 개인 설정(이 브라우저만). 상단 바 [배경] 버튼
 (function(){
 const st=document.createElement("style");st.id="ui-bg";st.textContent=`
+html[data-bg="mix"][data-theme="dark"] body,html[data-bg="5"][data-theme="dark"] body{background:radial-gradient(1000px 360px at 50% -100px,rgba(79,134,255,.20),transparent 70%),radial-gradient(520px 420px at 0 0,rgba(79,134,255,.14),transparent 70%),radial-gradient(800px 300px at 100% 0,rgba(45,212,191,.08),transparent 70%),#07080c!important;background-attachment:fixed!important}
+html[data-bg="mix"]:not([data-theme="dark"]) body{background:radial-gradient(at 10% 15%,#bcd3ff 0,transparent 45%),radial-gradient(at 92% 8%,#bff0e8 0,transparent 42%),radial-gradient(at 70% 95%,#ddd0ff 0,transparent 48%),radial-gradient(at 35% 70%,#d9ecff 0,transparent 40%),#eef2f8;background-attachment:fixed}
 html[data-bg="5"] body{background:radial-gradient(900px 320px at 50% -80px,rgba(47,111,237,.13),transparent 70%),radial-gradient(700px 260px at 100% 0,rgba(34,184,207,.07),transparent 70%),#f5f6fa;background-attachment:fixed}
 html[data-bg="5"][data-theme="dark"] body{background:radial-gradient(1000px 360px at 50% -100px,rgba(79,134,255,.20),transparent 70%),radial-gradient(800px 300px at 100% 0,rgba(45,212,191,.08),transparent 70%),#07080c;background-attachment:fixed}
 html[data-bg="2"] body{background:radial-gradient(at 10% 15%,#bcd3ff 0,transparent 45%),radial-gradient(at 92% 8%,#bff0e8 0,transparent 42%),radial-gradient(at 70% 95%,#ddd0ff 0,transparent 48%),radial-gradient(at 35% 70%,#d9ecff 0,transparent 40%),#eef2f8;background-attachment:fixed}
 html[data-bg="2"][data-theme="dark"] body{background:radial-gradient(at 8% 12%,rgba(37,84,214,.55) 0,transparent 45%),radial-gradient(at 95% 10%,rgba(13,148,136,.40) 0,transparent 42%),radial-gradient(at 70% 100%,rgba(109,40,217,.45) 0,transparent 50%),#060a15;background-attachment:fixed}
 html[data-bg] .main{background:transparent!important}
-html[data-bg] .topbar{background:color-mix(in srgb,var(--bg-elev) 72%,transparent)!important}
-html[data-bg="2"] .sidebar{background:color-mix(in srgb,var(--sb-bg) 82%,transparent)!important;backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%)}
+html[data-bg] .sidebar{background:color-mix(in srgb,var(--sb-bg) 55%,transparent)!important;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);border-right-color:color-mix(in srgb,var(--sb-line) 70%,transparent)!important}
+html[data-bg] .sidebar :is(.sb-brand,.sb-today,.sb-group,.sb-nav,.sb-grp,.sb-collapse,.sb-item:not(.active)){background-color:transparent!important}
+html[data-bg] .sb-item:not(.active):hover{background:color-mix(in srgb,var(--text) 6%,transparent)!important}
+html[data-bg] .layout,html[data-bg] .main{background:transparent!important}
+html[data-bg] .topbar{background:color-mix(in srgb,var(--bg-elev) 55%,transparent)!important;backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}
 html[data-bg] #tab-erp,html[data-bg] .erp-frame{background:transparent!important}
 .bg60m{position:absolute;right:0;top:calc(100% + 6px);z-index:60;min-width:230px;padding:6px;border-radius:12px;background:var(--bg-elev);box-shadow:var(--shadow-h);display:none}
 .bg60m.on{display:block}.bg60m button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;font-size:13px}
 .bg60m button:hover{background:var(--bg-elev2)}.bg60m button.on{background:var(--accent-dim);color:var(--accent);font-weight:700}
 .bg60m i{flex:0 0 34px;height:22px;border-radius:6px;border:1px solid var(--border)}
 `;document.head.appendChild(st);
-const OPT=[["","기본 (단색)","background:var(--bg)"],["5","5안 · 은은한 빛","background:radial-gradient(40px 14px at 50% 0,rgba(47,111,237,.45),transparent),var(--bg)"],["2","2안 · 컬러 그라데이션","background:radial-gradient(at 10% 20%,#9dbcff,transparent 60%),radial-gradient(at 90% 10%,#9fe6da,transparent 60%),radial-gradient(at 70% 100%,#c9b6ff,transparent 60%),#eef2f8"]];
-let bg="";try{bg=localStorage.getItem("epc-bg60")||""}catch(e){}
+const OPT=[["mix","자동 · 화이트 2안 / 다크 5안","background:linear-gradient(90deg,#c4d6ff 50%,#0b1328 50%)"],["","기본 (단색)","background:var(--bg)"],["5","5안 · 은은한 빛","background:radial-gradient(40px 14px at 50% 0,rgba(47,111,237,.45),transparent),var(--bg)"],["2","2안 · 컬러 그라데이션","background:radial-gradient(at 10% 20%,#9dbcff,transparent 60%),radial-gradient(at 90% 10%,#9fe6da,transparent 60%),radial-gradient(at 70% 100%,#c9b6ff,transparent 60%),#eef2f8"]];
+let bg="mix";try{const v=localStorage.getItem("epc-bg61");if(v!==null)bg=v}catch(e){}// 기본값 = 혼합 (키를 바꿔 이전 선택은 초기화)
 function apply(){const H=document.documentElement;if(bg)H.setAttribute("data-bg",bg);else H.removeAttribute("data-bg");
  try{const doc=$("erpFrame").contentDocument;if(doc&&doc.head){let s=doc.getElementById("ui-bg");if(!s){s=doc.createElement("style");s.id="ui-bg";doc.head.appendChild(s)}s.textContent=bg?"html,body{background:transparent!important}":""}}catch(e){}
  const m=document.getElementById("bg60m");if(m)m.innerHTML=OPT.map(([k,l,sw])=>`<button class="${bg===k?"on":""}" onclick="bg60Set('${k}')"><i style="${sw}"></i>${l}</button>`).join("")}
-window.bg60Set=function(k){bg=k;try{localStorage.setItem("epc-bg60",k)}catch(e){}apply();const m=document.getElementById("bg60m");if(m)m.classList.remove("on")};
+window.bg60Set=function(k){bg=k;try{localStorage.setItem("epc-bg61",k)}catch(e){}apply();const m=document.getElementById("bg60m");if(m)m.classList.remove("on")};
 const tb=document.querySelector(".tb-right");if(tb&&!document.getElementById("bg60b")){const th=document.getElementById("tbTheme");const w=document.createElement("div");w.style.position="relative";w.innerHTML='<button class="tb-icon" id="bg60b" title="화면 배경 (이 브라우저만)">◐</button><div class="bg60m" id="bg60m"></div>';(th||tb.lastElementChild).before(w);
  w.querySelector("#bg60b").onclick=e=>{e.stopPropagation();document.getElementById("bg60m").classList.toggle("on")};document.addEventListener("click",e=>{const m=document.getElementById("bg60m");if(m&&!w.contains(e.target))m.classList.remove("on")})}
 const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{apply()}catch(e){}return r};
