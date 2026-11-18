@@ -26,6 +26,48 @@ const json = (o: unknown, status = 200) =>
 
 const SNAP_KEEP_DAYS = 60;
 const TRASH_KEEP_DAYS = 180;
+const HIST_KEEP_DAYS = 365;
+
+// ---------- 변경 이력 도우미 ----------
+// 기록 대상이 아닌 값 (자동 갱신 시각·작성자 도장)
+const HIST_NOISE = new Set(["updatedAt", "_at", "_by", "createdAt"]);
+function histShort(v: any): string {
+  if (v == null || v === "") return "";
+  const s = typeof v === "string" ? v : JSON.stringify(v);
+  return s.length > 140 ? s.slice(0, 137) + "…" : s;
+}
+// 바뀐 칸 목록 [{k: 경로, f: 이전, t: 이후}] — 객체는 2단계까지, 표(배열)는 행 수 변화 또는 행·칸 단위
+export function histDiff(a: any, b: any, path = "", depth = 0, out: { k: string; f: string; t: string }[] = []) {
+  const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+  for (const k of keys) {
+    if (out.length >= 40) break;
+    if (HIST_NOISE.has(k)) continue;
+    const x = a?.[k], y = b?.[k], p = path ? path + "." + k : k;
+    if (JSON.stringify(x) === JSON.stringify(y)) continue;
+    const obj = (v: any) => v && typeof v === "object" && !Array.isArray(v);
+    if (depth < 2 && obj(x) && obj(y)) { histDiff(x, y, p, depth + 1, out); continue; }
+    if (Array.isArray(x) || Array.isArray(y)) {
+      const ax: any[] = Array.isArray(x) ? x : [], ay: any[] = Array.isArray(y) ? y : [];
+      if (ax.length !== ay.length) out.push({ k: p, f: ax.length + "행", t: ay.length + "행" });
+      else ay.forEach((r, i) => {
+        if (out.length >= 40 || JSON.stringify(ax[i]) === JSON.stringify(r)) return;
+        if (obj(ax[i]) && obj(r)) histDiff(ax[i], r, p + "." + i, 9, out);
+        else out.push({ k: p + "." + i, f: histShort(ax[i]), t: histShort(r) });
+      });
+      continue;
+    }
+    out.push({ k: p, f: histShort(x), t: histShort(y) });
+  }
+  return out;
+}
+function histLabel(d: any, id: string): string {
+  const v = d?.name || d?.title || d?.label || d?.item || d?.vendor || d?.text || d?.note || d?.memo || id;
+  return String(v).replace(/\s+/g, " ").slice(0, 80);
+}
+function histPid(c: string, id: string, d: any): string {
+  if (c === "projects") return id;
+  return String(d?.projectId || d?.pid || (d?.refType === "project" ? d?.refId : "") || "");
+}
 const kstDay = (d = new Date()) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10);
 
 export default {
@@ -73,6 +115,18 @@ export class Hub extends DurableObject<Env> {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS snaps(sid TEXT PRIMARY KEY, kind TEXT, day TEXT, at TEXT, n INTEGER, z BLOB)`);
     // 관리 기록: 차단된 대량 삭제 · 복원 등
     this.sql.exec(`CREATE TABLE IF NOT EXISTS audit(aid INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, who TEXT, kind TEXT, detail TEXT)`);
+    // 변경 이력 (2026-11-18): 누가·언제·무엇을 추가/수정/삭제 — 직원 누구나 '변경 이력' 탭에서 열람 (1년 보관)
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS hist(hid INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, who TEXT, c TEXT, id TEXT, op TEXT, pid TEXT, label TEXT, ch TEXT)`);
+    this.sql.exec("CREATE INDEX IF NOT EXISTS hist_pid ON hist(pid, hid)");
+    // 처음 만들 때 휴지통(11/17~)의 삭제 기록을 이력으로 옮겨 둠
+    if (!this.kvGet("histInit")) {
+      for (const t of this.sql.exec<{ c: string; id: string; d: string; delAt: string; delBy: string }>("SELECT c,id,d,delAt,delBy FROM trash ORDER BY tid").toArray()) {
+        let d: any = {};
+        try { d = JSON.parse(t.d); } catch {}
+        this.sql.exec("INSERT INTO hist(at,who,c,id,op,pid,label,ch) VALUES(?,?,?,?,?,?,?,?)", t.delAt, t.delBy || "", t.c, t.id, "del", histPid(t.c, t.id, d), histLabel(d, t.id), "");
+      }
+      this.kvSet("histInit", new Date().toISOString());
+    }
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
 
@@ -98,13 +152,16 @@ export class Hub extends DurableObject<Env> {
       .toArray()
       .map((r) => ({ c: r.c, id: r.id, d: JSON.parse(r.d), by: r.by, at: r.at }));
   }
+  hist(at: string, who: string, c: string, id: string, op: string, d: any, ch: string) {
+    this.sql.exec("INSERT INTO hist(at,who,c,id,op,pid,label,ch) VALUES(?,?,?,?,?,?,?,?)", at, String(who || "").slice(0, 40), c, id, op, histPid(c, id, d), histLabel(d, id), ch);
+  }
   audit(who: string, kind: string, detail: string) {
     this.sql.exec("INSERT INTO audit(at,who,kind,detail) VALUES(?,?,?,?)", new Date().toISOString(), who, kind, detail.slice(0, 2000));
     this.sql.exec("DELETE FROM audit WHERE aid NOT IN (SELECT aid FROM audit ORDER BY aid DESC LIMIT 2000)");
   }
 
   // 수정 묶음 저장 → 새 seq 반환. 삭제는 휴지통에 원본을 남기고 지움
-  applyOps(ops: Op[], who = ""): number {
+  applyOps(ops: Op[], who = "", log = true): number {
     let seq = this.seq();
     const now = new Date().toISOString();
     this.ctx.storage.transactionSync(() => {
@@ -116,10 +173,25 @@ export class Hub extends DurableObject<Env> {
         if (o.op === "del") {
           const old = this.sql.exec<{ d: string }>("SELECT d FROM rec WHERE c=? AND id=?", o.c, id).toArray()[0];
           if (old) this.sql.exec("INSERT INTO trash(c,id,d,delAt,delBy,seq) VALUES(?,?,?,?,?,?)", o.c, id, old.d, now, o.by || who || null, seq);
+          if (old && log) {
+            let od: any = {};
+            try { od = JSON.parse(old.d); } catch {}
+            this.hist(now, o.by || who, o.c, id, "del", od, "");
+          }
           this.sql.exec("DELETE FROM rec WHERE c=? AND id=?", o.c, id);
         } else if (o.op === "put" && o.d != null) {
           const d = JSON.stringify(o.d);
-          const cur = this.sql.exec("SELECT 1 FROM rec WHERE c=? AND id=?", o.c, id).toArray().length;
+          const prev = this.sql.exec<{ d: string }>("SELECT d FROM rec WHERE c=? AND id=?", o.c, id).toArray()[0];
+          const cur = prev ? 1 : 0;
+          if (log) {
+            if (!prev) this.hist(now, o.by || who, o.c, id, "add", o.d, "");
+            else if (prev.d !== d) {
+              let pd: any = {};
+              try { pd = JSON.parse(prev.d); } catch {}
+              const ch = histDiff(pd, o.d);
+              if (ch.length) this.hist(now, o.by || who, o.c, id, "put", o.d, JSON.stringify(ch).slice(0, 6000));
+            }
+          }
           if (cur) {
             this.sql.exec("UPDATE rec SET d=?, by=?, at=?, seq=? WHERE c=? AND id=?", d, o.by ?? null, o.at ?? null, seq, o.c, id);
           } else {
@@ -137,7 +209,9 @@ export class Hub extends DurableObject<Env> {
     this.ctx.storage.transactionSync(() => {
       this.sql.exec("DELETE FROM rec");
     });
-    return this.applyOps(recs.map((r) => ({ c: r.c, op: "put", id: r.id, d: r.d, at: new Date().toISOString(), by })));
+    const seq = this.applyOps(recs.map((r) => ({ c: r.c, op: "put", id: r.id, d: r.d, at: new Date().toISOString(), by })), by, false);
+    this.sql.exec("INSERT INTO hist(at,who,c,id,op,pid,label,ch) VALUES(?,?,?,?,?,?,?,?)", new Date().toISOString(), by, "meta", "all", "load", "", `전체 데이터 ${recs.length}건`, "");
+    return seq;
   }
 
   // ---------- 백업 ----------
@@ -158,6 +232,7 @@ export class Hub extends DurableObject<Env> {
     this.sql.exec("DELETE FROM snaps WHERE day < ?", cut);
     const tcut = new Date(Date.now() - TRASH_KEEP_DAYS * 864e5).toISOString();
     this.sql.exec("DELETE FROM trash WHERE delAt < ?", tcut);
+    this.sql.exec("DELETE FROM hist WHERE at < ?", new Date(Date.now() - HIST_KEEP_DAYS * 864e5).toISOString());
     return { sid, n: recs.length };
   }
   async snapJson(sid: string): Promise<any | null> {
@@ -242,6 +317,24 @@ export class Hub extends DurableObject<Env> {
       return json({ ok: true, records: recs.length, seq });
     }
 
+    // 변경 이력 열람 (직원 누구나) — ?before=hid&limit=&pid=&c=&who=&op=&q=
+    if (p === "/api/hist") {
+      const q = url.searchParams, W: string[] = [], A: any[] = [];
+      const add = (sql: string, v: any) => { W.push(sql); A.push(v); };
+      if (q.get("before")) add("hid < ?", Number(q.get("before")));
+      if (q.get("pid")) add("pid = ?", q.get("pid"));
+      if (q.get("c")) add("c = ?", q.get("c"));
+      if (q.get("who")) add("who = ?", q.get("who"));
+      if (q.get("op")) add("op = ?", q.get("op"));
+      if (q.get("since")) add("at >= ?", q.get("since"));
+      if (q.get("q")) { W.push("(label LIKE ? OR ch LIKE ? OR who LIKE ?)"); const s = "%" + q.get("q") + "%"; A.push(s, s, s); }
+      const lim = Math.min(500, Math.max(1, Number(q.get("limit")) || 200));
+      const rows = this.sql.exec(`SELECT hid,at,who,c,id,op,pid,label,ch FROM hist ${W.length ? "WHERE " + W.join(" AND ") : ""} ORDER BY hid DESC LIMIT ${lim}`, ...A).toArray();
+      const names = this.sql.exec<{ who: string }>("SELECT DISTINCT who FROM hist WHERE at > ? ORDER BY who", new Date(Date.now() - 180 * 864e5).toISOString()).toArray().map((r) => r.who);
+      const since = this.kvGet("histInit") || "";
+      return json({ rows, names, since, more: rows.length === lim });
+    }
+
     if (p.startsWith("/api/admin/")) return this.admin(req, url, p.slice("/api/admin/".length));
 
     return json({ error: "not found" }, 404);
@@ -280,7 +373,7 @@ export class Hub extends DurableObject<Env> {
           try {
             d = JSON.parse(r.d);
           } catch {}
-          const label = String(d.name || d.title || d.label || d.text || d.content || d.ym || d.wk || r.id).slice(0, 80);
+          const label = String(d.name || d.title || d.label || d.item || d.subject || d.issue || d.text || d.content || d.memo || d.note || d.ym || d.wk || r.id).replace(/\s+/g, " ").slice(0, 80);
           return { tid: r.tid, c: r.c, id: r.id, delAt: r.delAt, delBy: r.delBy || "", label, pid: d.projectId || "", alive: this.sql.exec("SELECT 1 FROM rec WHERE c=? AND id=?", r.c, r.id).toArray().length > 0 };
         })
         .filter((r) => !q || (r.label + " " + r.delBy + " " + r.c).includes(q));
@@ -296,11 +389,33 @@ export class Hub extends DurableObject<Env> {
         if (r) ops.push({ c: r.c, op: "put", id: r.id, d: JSON.parse(r.d), at: now, by: "관리자 복원" });
       }
       if (!ops.length) return json({ error: "복원할 항목 없음" }, 400);
+      // 현장을 지우면 화면이 실적관리 현장에 '대시보드에서 제외'(dashSkip)를 같이 찍음 → 같은 삭제 묶음이면 되돌려 연결 복구
+      let erp = 0;
+      const batches = new Set<string>();
+      for (const tid of tids) {
+        const t = this.sql.exec<{ delAt: string; delBy: string }>("SELECT delAt,delBy FROM trash WHERE tid=?", tid).toArray()[0];
+        if (t) batches.add(t.delAt + "|" + (t.delBy || ""));
+      }
+      for (const k of batches) {
+        const [at, who] = [k.slice(0, k.indexOf("|")), k.slice(k.indexOf("|") + 1)];
+        for (const h of this.sql.exec<{ id: string; ch: string }>("SELECT id,ch FROM hist WHERE at=? AND who=? AND c='erp' AND op='put'", at, who).toArray()) {
+          let ch: any[] = [];
+          try { ch = JSON.parse(h.ch || "[]"); } catch {}
+          if (!ch.some((x) => x.k === "dashSkip" && x.t === "true")) continue;
+          const cur = this.sql.exec<{ d: string }>("SELECT d FROM rec WHERE c='erp' AND id=?", h.id).toArray()[0];
+          if (!cur) continue;
+          const d = JSON.parse(cur.d);
+          if (d.dashSkip !== true) continue;
+          d.dashSkip = false;
+          ops.push({ c: "erp", op: "put", id: h.id, d, at: now, by: "관리자 복원" });
+          erp++;
+        }
+      }
       const seq = this.applyOps(ops, "관리자");
       this.sql.exec(`DELETE FROM trash WHERE tid IN (${tids.map(() => "?").join(",")})`, ...tids);
-      this.audit("관리자", "휴지통 복원", `${ops.length}건`);
+      this.audit("관리자", "휴지통 복원", `${ops.length - erp}건${erp ? ` · 실적관리 연결 ${erp}곳 되돌림` : ""}`);
       this.broadcast({ t: "ops", seq, from: "admin", ops });
-      return json({ ok: true, restored: ops.length, seq });
+      return json({ ok: true, restored: ops.length - erp, erp, seq });
     }
     if (a === "snaps") {
       return json({ rows: this.sql.exec("SELECT sid,kind,day,at,n,length(z) AS size FROM snaps ORDER BY at DESC").toArray() });

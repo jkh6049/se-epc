@@ -55,11 +55,11 @@ function page(next: string, error = "", status = 200): Response {
 <title>${TITLE}</title>
 <link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#004c7f">
 <style>
-:root{color-scheme:light;--bg:#f3f4f6;--card:#fff;--line:#d9dce2;--text:#111827;--dim:#6b7280;--accent:#2f6fed;--accent-dim:#e3ecfd;--danger:#d7372f;--danger-dim:#fde5e3}
-@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0f1014;--card:#1a1c22;--line:#2a2d38;--text:#eceef2;--dim:#8a8f9c;--accent:#5b8dff;--accent-dim:#2a3a5e;--danger:#e85a52;--danger-dim:#4a1a18}}
+:root{color-scheme:light;--bg:#f3f5f8;--card:#fff;--line:#e6e9ef;--text:#0f172a;--dim:#64748b;--sh:0 0 0 1px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.05),0 12px 32px -8px rgba(16,24,40,.14);--accent:#2f6fed;--accent-dim:#e3ecfd;--danger:#d7372f;--danger-dim:#fde5e3}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0b0d12;--card:#151922;--line:#232939;--text:#e8ebf2;--dim:#7f889a;--sh:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.45),0 16px 40px -10px rgba(0,0,0,.7);--accent:#6b9bff;--accent-dim:#2a3a5e;--danger:#e85a52;--danger-dim:#4a1a18}}
 *{box-sizing:border-box;margin:0}
 body{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
-.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:32px 28px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.card{width:100%;max-width:380px;background:var(--card);border:0;border-radius:14px;padding:32px 28px;box-shadow:var(--sh)}
 .brand{text-align:center;margin-bottom:28px}
 .brand picture,.brand img{display:block;height:44px;width:auto;margin:0 auto 14px}
 .brand h1{font-size:17px;font-weight:700;letter-spacing:-.2px}
