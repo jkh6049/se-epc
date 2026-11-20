@@ -8104,7 +8104,9 @@ function tl63Ok(k,d){const me=meName();if(!me){toast("내 정보에서 이름을
  if(mine)replies.splice(replies.indexOf(mine),1);else replies.push({id:"r"+uid(),logId:tl63Cid(k,d),kind:"확인",author:me,date:todayStr(),text:"",createdAt:new Date().toISOString()});save();renderProgress()}
 // 같은 묶음 안 삭제가 3건 이상이면 한 줄로 접음
 function tl63Lines(L){// Task 처리기록(그 Task 에 단 진행 기록)은 해당 Task 줄 바로 아래에 붙임
- const tid=new Set(L.filter(e=>e.kind==="task"&&e.id).map(e=>e.id));const under=new Map(),rest=[];L.forEach(e=>{if(e.kind==="log"&&e.g.refType==="task"&&tid.has(e.g.refId)){if(!under.has(e.g.refId))under.set(e.g.refId,[]);under.get(e.g.refId).push(e)}else rest.push(e)});
+ const tid=new Set(L.filter(e=>e.kind==="task"&&e.id).map(e=>e.id));
+ // 그날 Task 자체 변화가 없어도 Task 에 단 기록이면 Task 줄을 먼저 보여주고 그 아래에 기록 (등록일이 지난 Task 포함)
+ const extra=[];L.forEach(e=>{if(e.kind==="log"&&e.g.refType==="task"&&!tid.has(e.g.refId)){const t=tasks.find(x=>x.id===e.g.refId);if(t){tid.add(t.id);extra.push({kind:"task",key:e.key,day:e.day,tag:t.status||"진행중",title:t.title,id:t.id,ok:t.status==="완료"?1:0,ctx:1})}}});if(extra.length)L=[...extra,...L.filter(e=>e.kind!=="log"||e.g.refType!=="task"||!extra.some(x=>x.id===e.g.refId)),...L.filter(e=>e.kind==="log"&&e.g.refType==="task"&&extra.some(x=>x.id===e.g.refId))];const under=new Map(),rest=[];L.forEach(e=>{if(e.kind==="log"&&e.g.refType==="task"&&tid.has(e.g.refId)){if(!under.has(e.g.refId))under.set(e.g.refId,[]);under.get(e.g.refId).push(e)}else rest.push(e)});
  if(under.size){const seen=new Set();return rest.map(e=>{let h=tl63Lines0([e]);if(e.kind==="task"&&under.has(e.id)&&!seen.has(e.id)){seen.add(e.id);h+=`<div class="tl-sub">${under.get(e.id).map(x=>logItemHtml(x.g,false)).join("")}</div>`}return h}).join("")}
  return tl63Lines0(L)}
 function tl63Lines0(L){const del=L.filter(e=>e.tag==="삭제");if(del.length<3)return L.map(tl63Line).join("");const rest=L.filter(e=>e.tag!=="삭제");
