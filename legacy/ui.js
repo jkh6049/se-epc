@@ -199,6 +199,7 @@ const css=`.kpi{background:color-mix(in srgb,var(--tc,var(--brand)) 5%,var(--car
 .kpi>.v{font-size:28px!important;font-weight:800!important;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:8px}
 .kpi>.s{font-size:12px!important}
 .ic59{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;background:var(--tc,var(--brand));color:#fff;font-style:normal;font-size:13px;font-weight:800;box-shadow:0 4px 10px -3px color-mix(in srgb,var(--tc,var(--brand)) 70%,transparent);margin-right:9px}
+.kpi{background:var(--card)!important}.ic59{background:color-mix(in srgb,currentColor 13%,transparent)!important;color:inherit!important;box-shadow:none!important}
 @media print{.ic59{display:none}.kpi{background:#fff!important}}`;
 function deco(doc){doc.querySelectorAll(".kpi:not([data-i60])").forEach(k=>{k.dataset.i60=1;const lb=k.querySelector(":scope>.k,:scope>.l");if(!lb||lb.querySelector(".ic59"))return;const m=IC.find(x=>x[0].test(lb.textContent))||[0,"•","#2f6fed"];k.style.setProperty("--tc",m[2]);lb.insertAdjacentHTML("afterbegin",`<i class="ic59" aria-hidden="true">${m[1]}</i>`)})}
 const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{const doc=$("erpFrame").contentDocument;if(!doc||!doc.head)return r;let s=doc.getElementById("ui-kpi");if(!s){s=doc.createElement("style");s.id="ui-kpi";doc.head.appendChild(s);new MutationObserver(()=>{try{deco(doc)}catch(e){}}).observe(doc.body,{childList:true,subtree:true})}s.textContent=css;deco(doc)}catch(e){}return r};
@@ -245,10 +246,10 @@ td.bar60>.hl-bar{display:inline-block!important;vertical-align:middle;width:calc
 const st=document.createElement("style");st.id="ui-bg";st.textContent=`
 html[data-bg="mix"][data-theme="dark"] body{background:radial-gradient(70% 55% at 50% -10%,rgba(79,134,255,.30),transparent 70%),radial-gradient(45% 60% at 0% 100%,rgba(99,102,241,.22),transparent 70%),radial-gradient(45% 55% at 100% 35%,rgba(45,212,191,.13),transparent 70%),radial-gradient(40% 40% at 10% 15%,rgba(79,134,255,.16),transparent 70%),#07080c!important;background-attachment:fixed!important}
 html[data-bg="5"][data-theme="dark"] body{background:radial-gradient(1000px 360px at 50% -100px,rgba(79,134,255,.20),transparent 70%),radial-gradient(520px 420px at 0 0,rgba(79,134,255,.14),transparent 70%),radial-gradient(800px 300px at 100% 0,rgba(45,212,191,.08),transparent 70%),#07080c!important;background-attachment:fixed!important}
-html[data-bg="mix"]:not([data-theme="dark"]) body{background:radial-gradient(at 10% 15%,#bcd3ff 0,transparent 45%),radial-gradient(at 92% 8%,#bff0e8 0,transparent 42%),radial-gradient(at 70% 95%,#ddd0ff 0,transparent 48%),radial-gradient(at 35% 70%,#d9ecff 0,transparent 40%),#eef2f8;background-attachment:fixed}
+html[data-bg="mix"]:not([data-theme="dark"]) body{background:radial-gradient(at 10% 15%,#d2e0fc 0,transparent 45%),radial-gradient(at 92% 8%,#d4f1ec 0,transparent 42%),radial-gradient(at 70% 95%,#e6def9 0,transparent 48%),radial-gradient(at 35% 70%,#e3eefb 0,transparent 40%),#f0f3f8;background-attachment:fixed}
 html[data-bg="5"] body{background:radial-gradient(900px 320px at 50% -80px,rgba(47,111,237,.13),transparent 70%),radial-gradient(700px 260px at 100% 0,rgba(34,184,207,.07),transparent 70%),#f5f6fa;background-attachment:fixed}
 html[data-bg="5"][data-theme="dark"] body{background:radial-gradient(1000px 360px at 50% -100px,rgba(79,134,255,.20),transparent 70%),radial-gradient(800px 300px at 100% 0,rgba(45,212,191,.08),transparent 70%),#07080c;background-attachment:fixed}
-html[data-bg="2"] body{background:radial-gradient(at 10% 15%,#bcd3ff 0,transparent 45%),radial-gradient(at 92% 8%,#bff0e8 0,transparent 42%),radial-gradient(at 70% 95%,#ddd0ff 0,transparent 48%),radial-gradient(at 35% 70%,#d9ecff 0,transparent 40%),#eef2f8;background-attachment:fixed}
+html[data-bg="2"] body{background:radial-gradient(at 10% 15%,#d2e0fc 0,transparent 45%),radial-gradient(at 92% 8%,#d4f1ec 0,transparent 42%),radial-gradient(at 70% 95%,#e6def9 0,transparent 48%),radial-gradient(at 35% 70%,#e3eefb 0,transparent 40%),#f0f3f8;background-attachment:fixed}
 html[data-bg="2"][data-theme="dark"] body{background:radial-gradient(at 8% 12%,rgba(37,84,214,.55) 0,transparent 45%),radial-gradient(at 95% 10%,rgba(13,148,136,.40) 0,transparent 42%),radial-gradient(at 70% 100%,rgba(109,40,217,.45) 0,transparent 50%),#060a15;background-attachment:fixed}
 html[data-bg] .main{background:transparent!important}
 html[data-bg] .sidebar{background:color-mix(in srgb,var(--sb-bg) 55%,transparent)!important;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);border-right-color:color-mix(in srgb,var(--sb-line) 70%,transparent)!important}
@@ -273,3 +274,11 @@ const tb=document.querySelector(".tb-right");if(tb&&!document.getElementById("bg
 const _sk=erpSkin;erpSkin=function(){const r=_sk.apply(this,arguments);try{apply()}catch(e){}return r};
 apply();
 })();
+
+// 숫자 칸 아이콘 무채색 (2026-11-20) — 칸마다 다른 장식 색을 빼고 회색 한 가지. 색은 상태(주의·지연)에만
+(function(){const st=document.createElement("style");st.id="ic62";st.textContent=`
+:is(.hl-kpi .k,.pf-kpi .k,.stat,.sk24,.main .kpi,.m59-k){background:var(--bg-elev)!important}
+.ic59{background:color-mix(in srgb,currentColor 13%,transparent)!important;color:inherit!important;box-shadow:none!important}
+.m59-k:is(.warn,.bad){background:color-mix(in srgb,var(--tc) 7%,var(--bg-elev))!important}
+.m59-k:is(.warn,.bad) .ic59{background:var(--tc)!important;color:#fff!important}
+`;(document.head||document.documentElement).appendChild(st)})();
