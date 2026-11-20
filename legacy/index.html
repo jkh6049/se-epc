@@ -8064,6 +8064,106 @@ function fmTab62(sel,attr,n){const b=document.querySelector(`${sel} [${attr}="me
 {const _rp62=renderPlantDetail;renderPlantDetail=function(){const r=_rp62.apply(this,arguments);try{const L=fmOf62("plantId",plantDetailId);fmTab62("#pdTabs","data-pd",L.length);if(plantTab==="memo"&&L.length){const c=$("pdContent");if(c&&!c.querySelector(".fm62"))c.insertAdjacentHTML("afterbegin",fmBox62(L))}}catch(e){console.error("[v62]",e)}return r}}
 (function(){const st=document.createElement("style");st.textContent=`.fm62{margin-bottom:14px}.fm62-h{display:flex;align-items:baseline;gap:8px;padding:12px 14px 8px}.fm62-h b{font-size:15px}
 .fm62-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--accent);color:#fff;font-size:11px;font-weight:800;margin-left:5px}`;document.head.appendChild(st)})();
+// ===================== v63 (2026-11-20): 진행사항 = 자동 경과 타임라인 (입력하는 곳 → 보는 곳) =====================
+// 따로 적지 않아도 Task·마일스톤·사내 양식·진행 기록이 현장별·날짜별로 모임. 확인 = 현장·날짜 묶음마다 [확인] (누가·언제 남음)
+// 소스: 레코드 자체(Task 등록·완료, 마일스톤 완료, 사내 양식) + 서버 변경 이력(Task 상태·마감·메모 변경) + 진행 기록(logs, 답글 지시/처리 유지)
+const TL63={hist:[],at:0,range:"",loading:false,open:false,kind:"all",unc:false};
+const TLK63={task:"Task",ms:"마일스톤",form:"사내 양식",log:"진행 기록"};
+function tl63Site(k){if(!k||k==="-")return{name:"현장 미지정",go:""};if(k.startsWith("pl:")){const x=plant(k.slice(3));return{name:x?"O&M · "+x.name:"(삭제된 발전소)",go:x?`openPlantDetail('${x.id}')`:""}}const p=proj(k.slice(2));return{name:p?p.name:"(삭제된 현장)",go:p?`openDetail('${p.id}')`:""}}
+const tl63Key=o=>o&&o.projectId?"p:"+o.projectId:o&&o.plantId?"pl:"+o.plantId:"-";
+function tl63LogKey(g){if(g.refType==="project")return"p:"+g.refId;if(g.refType==="plant")return"pl:"+g.refId;if(g.refType==="task"){const k=tasks.find(x=>x.id===g.refId);return tl63Key(k)}if(g.refType==="site"){const p=logOfProj(g);return p?"p:"+p:"-"}const p=logOfProj(g);return p?"p:"+p:"-"}
+const tl63Day=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?String(iso).slice(0,10):fmt(d)};
+const tl63Tm=iso=>{if(!iso||String(iso).length<=10)return"";const d=new Date(iso);return isNaN(d)?"":String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+// 서버 변경 이력 (기간 안, 최대 1,000줄)
+async function tl63Load(force){const from=PG.range==="all"?"":new Date(Date.now()-Number(PG.range)*864e5).toISOString();
+ if(!force&&TL63.range===PG.range&&Date.now()-TL63.at<60e3)return;if(TL63.loading)return;TL63.loading=true;
+ try{let all=[],before="";for(let i=0;i<5;i++){const u=new URLSearchParams({limit:"200"});if(from)u.set("since",from);if(before)u.set("before",before);const r=await fetch("/api/hist?"+u,{cache:"no-store"});if(!r.ok)break;const j=await r.json();const rows=j.rows||j.list||j.items||[];all=all.concat(rows);if(rows.length<200)break;before=rows[rows.length-1].hid}
+  TL63.hist=all;TL63.at=Date.now();TL63.range=PG.range}catch(e){console.warn("[tl63] hist",e)}finally{TL63.loading=false}
+ if(curTab==="progress")renderProgress()}
+// 사건 모으기
+function tl63Events(){const from=PG.range==="all"?"":fmt(new Date(Date.now()-Number(PG.range)*864e5));const E=[];const inR=d=>d&&(!from||d>=from);
+ tasks.forEach(t=>{const k=tl63Key(t);const c=tl63Day(t.createdAt);if(inR(c))E.push({kind:"task",key:k,day:c,at:t.createdAt,tag:"등록",title:t.title,id:t.id,who:t.owner&&t.owner!=="본인"?t.owner:""});
+  const dn=t.doneAt||(t.status==="완료"?tl63Day(t.updatedAt):"");if(t.status==="완료"&&inR(dn))E.push({kind:"task",key:k,day:dn,at:t.doneAt&&t.doneAt.length>10?t.doneAt:"",tag:"완료",title:t.title,id:t.id,ok:1})});
+ milestones.forEach(m=>{if(m.status==="완료"&&inR(m.doneDate))E.push({kind:"ms",key:"p:"+m.projectId,day:m.doneDate,tag:"완료",title:m.name,pid:m.projectId,ok:1})});
+ (typeof forms!=="undefined"?forms:[]).forEach(f=>{const d=tl63Day(f.createdAt||f.updatedAt);if(inR(d))E.push({kind:"form",key:tl63Key(f),day:d,at:f.createdAt,tag:(FORMS.find(x=>x.id===f.form)||{}).name||"양식",title:fmTitle(f),id:f.id})});
+ // 변경 이력: Task 상태(완료 제외)·마감·메모 변경, 삭제 · 같은 날 같은 Task 는 한 줄로
+ const seen=new Map();TL63.hist.forEach(h=>{if(h.c!=="tasks"||h.op==="add"||h.op==="load")return;const d=tl63Day(h.at);if(!inR(d))return;const t=tasks.find(x=>x.id===h.id);const k=t?tl63Key(t):h.pid?"p:"+h.pid:"-";
+  let ch=[];try{ch=JSON.parse(h.ch||"[]")}catch(e){}const parts=[];
+  
+  ch.forEach(x=>{if(x.k==="status"&&x.t!=="완료")parts.push(`상태 ${x.f||"-"} → ${x.t}`);else if(x.k==="due")parts.push(`마감 ${x.f?x.f.slice(5):"없음"} → ${x.t?x.t.slice(5):"없음"}`);else if(x.k==="notes")parts.push("메모 수정");else if(x.k==="title")parts.push("제목 변경")});
+  if(!parts.length&&h.op!=="del")return;const sk=d+"|"+h.id;const ex=seen.get(sk);
+  if(ex){parts.forEach(p=>{if(!ex.parts.includes(p))ex.parts.push(p)});return}
+  const e={kind:"task",key:k,day:d,at:h.at,tag:h.op==="del"?"삭제":"변경",title:h.label||(t&&t.title)||"",id:t?h.id:"",who:h.who,parts};seen.set(sk,e);E.push(e)});
+ // 진행 기록 (직접 쓴 것·Task 처리기록)
+ logs.forEach(g=>{if(inR(g.date)||logState(g)==="wait")E.push({kind:"log",key:tl63LogKey(g),day:g.date||tl63Day(g.createdAt),at:g.createdAt,g})});
+ return E}
+// 확인: 현장·날짜 묶음 단위, 답글(replies) 에 kind '확인' 으로 남김
+const tl63Cid=(k,d)=>"tl:"+k+":"+d;
+function tl63Chk(k,d){return replies.filter(r=>r.logId===tl63Cid(k,d)&&r.kind==="확인")}
+function tl63Ok(k,d){const me=meName();if(!me){toast("내 정보에서 이름을 먼저 설정해 주세요");meEdit();return}const mine=tl63Chk(k,d).find(r=>r.author===me);
+ if(mine)replies.splice(replies.indexOf(mine),1);else replies.push({id:"r"+uid(),logId:tl63Cid(k,d),kind:"확인",author:me,date:todayStr(),text:"",createdAt:new Date().toISOString()});save();renderProgress()}
+// 같은 묶음 안 삭제가 3건 이상이면 한 줄로 접음
+function tl63Lines(L){const del=L.filter(e=>e.tag==="삭제");if(del.length<3)return L.map(tl63Line).join("");const rest=L.filter(e=>e.tag!=="삭제");
+ return rest.map(tl63Line).join("")+`<details class="tl-dg"><summary><span class="tl-k" style="background:var(--danger-dim);color:var(--danger)">Task 삭제</span><span class="tl-t">${del.length}건 한꺼번에 삭제 <small>펼쳐서 보기 · 복원은 관리자 휴지통</small></span><span class="tl-w">${esc(del[0].who||"")}</span></summary>${del.map(tl63Line).join("")}</details>`}
+function tl63Line(e){if(e.kind==="log")return logItemHtml(e.g,false);
+ const go=e.kind==="task"&&e.id?`showTaskDetail('${e.id}')`:e.kind==="ms"?`openDetail('${e.pid}','ms')`:e.kind==="form"&&typeof fmGo62==="function"?`fmGo62('${e.id}')`:"";
+ return`<div class="tl-e ${e.ok?"ok":""} ${e.tag==="삭제"?"del":""}" ${go?`onclick="${go}"`:""}><span class="tl-k k-${e.kind}">${TLK63[e.kind]} ${esc(e.tag)}</span><span class="tl-t">${esc(e.title)}${e.parts?`<small>${esc(e.parts.join(" · "))}</small>`:""}</span><span class="tl-w">${esc(e.who||"")}${e.at&&tl63Tm(e.at)?` ${tl63Tm(e.at)}`:""}</span></div>`}
+renderProgress=function(){const el=$("tab-progress");if(!el)return;tl63Load();
+ const act=projects.filter(p=>!isClosed(p)),cl=projects.filter(isClosed);const me=meName();const DOW="일월화수목금토";
+ const q=(PG.q||"").trim().toLowerCase();
+ let E=tl63Events().filter(e=>(!PG.pid||e.key==="p:"+PG.pid||e.key==="pl:"+PG.pid)&&(TL63.kind==="all"||e.kind===TL63.kind)&&(!q||((e.title||"")+" "+(e.who||"")+" "+(e.g?e.g.text+" "+(e.g.author||""):"")+" "+tl63Site(e.key).name).toLowerCase().includes(q)));
+ // 날짜 › 현장 묶음
+ const G=new Map();E.forEach(e=>{const gk=e.day+"|"+e.key;if(!G.has(gk))G.set(gk,{day:e.day,key:e.key,list:[]});G.get(gk).list.push(e)});
+ let groups=[...G.values()].sort((a,b)=>b.day.localeCompare(a.day)||tl63Site(a.key).name.localeCompare(tl63Site(b.key).name));
+ if(TL63.unc)groups=groups.filter(g=>!tl63Chk(g.key,g.day).length);
+ const unc=[...G.values()].filter(g=>!tl63Chk(g.key,g.day).length).length;
+ const byDay=new Map();groups.forEach(g=>{if(!byDay.has(g.day))byDay.set(g.day,[]);byDay.get(g.day).push(g)});
+ const opt=p=>`<option value="${p.id}" ${PG.pid===p.id?"selected":""}>${esc(p.name)}</option>`;
+ const cnt=k=>E.filter(e=>k==="all"||e.kind===k).length;
+ // 오른쪽: 현장별 최근 경과
+ const allE=tl63Events();const sk=new Map();allE.forEach(e=>{if(e.key==="-")return;const s=sk.get(e.key)||{n:0,last:"",unc:new Set()};s.n++;if(e.day>s.last)s.last=e.day;if(!tl63Chk(e.key,e.day).length)s.unc.add(e.day);sk.set(e.key,s)});
+ const side=act.map(p=>{const k="p:"+p.id,s=sk.get(k);const d=s&&s.last?-daysUntil(s.last):null;return`<tr onclick="PG.pid='${p.id}';renderProgress()" class="${PG.pid===p.id?"on":""}"><td>${pbadge(p)}</td><td class="n">${s?s.n:""}</td><td class="${d==null||d>14?"soon":""}">${s&&s.last?(d===0?"오늘":d+"일 전"):"없음"}</td><td class="delay n">${s&&s.unc.size||""}</td></tr>`}).join("");
+ const comp=`<div class="hl-box pg-comp"><div class="pg-ch"><b>기록 남기기</b><span class="hint">Task 로 만들 일이 아닌 것만 (통화·협의 결과·현장 소식) · 작성자 <a href="#" onclick="meEdit();return false">${me?esc(me):"설정 필요"}</a></span></div>
+  <div class="pg-row"><select id="pgP"><option value="">현장 선택</option>${act.map(p=>`<option value="${p.id}" ${PG.pid===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}${cl.length?`<optgroup label="종료 현장">${cl.map(opt).join("")}</optgroup>`:""}</select><input type="date" id="pgD" value="${todayStr()}"><input id="pgL" title="링크·근거 (메일 제목·공문번호 등)"></div>
+  <textarea id="pgT" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')pgAdd()"></textarea>
+  <div class="pg-row" style="justify-content:space-between"><span class="hint">지시·처리는 등록 후 각 항목 '답글'로 · Ctrl+Enter</span><span><button class="btn btn-secondary btn-sm" onclick="TL63.open=false;renderProgress()">닫기</button> <button class="btn btn-sm" onclick="pgAdd()">+ 등록</button></span></div></div>`;
+ el.innerHTML=`<div class="pg-wrap"><div class="pg-main">
+ <div class="tl-intro"><div><b>진행 경과</b> <span class="hint">Task·마일스톤·사내 양식·진행 기록이 자동으로 모임 — 따로 적지 않아도 됨. 현장·날짜 묶음마다 [확인]으로 검토 여부 표시</span></div>${TL63.open?"":`<button class="btn btn-secondary btn-sm" onclick="TL63.open=true;renderProgress();setTimeout(()=>{const t=$('pgT');if(t)t.focus()},30)">+ 기록 남기기</button>`}</div>
+ ${TL63.open?comp:""}
+ <div class="pg-filter">
+  <select onchange="PG.pid=this.value;renderProgress()"><option value="">전체 현장</option>${act.map(opt).join("")}${cl.length?`<optgroup label="종료 현장">${cl.map(opt).join("")}</optgroup>`:""}</select>
+  <span class="view-seg">${[["7","7일"],["30","30일"],["90","90일"],["all","전체"]].map(([k,t])=>`<button class="${PG.range===k?"active":""}" onclick="PG.range='${k}';renderProgress()">${t}</button>`).join("")}</span>
+  <span class="view-seg">${[["all","전체"],["task","Task"],["ms","마일스톤"],["form","사내 양식"],["log","진행 기록"]].map(([k,t])=>`<button class="${TL63.kind===k?"active":""}" onclick="TL63.kind='${k}';renderProgress()">${t} <span class="tl-c">${cnt(k)}</span></button>`).join("")}</span>
+  <button class="chip ${TL63.unc?"active":""}" onclick="TL63.unc=!TL63.unc;renderProgress()">미확인만 ${unc?`<b class="delay">${unc}</b>`:""}</button>
+  <input id="pgQ" value="${esc(PG.q)}" title="내용·작성자·현장 검색" onkeydown="if(event.key==='Enter'){PG.q=this.value;renderProgress()}" onchange="PG.q=this.value;renderProgress()" style="width:170px">
+ </div>
+ ${TL63.loading&&!TL63.at?`<div class="hint" style="margin:0 2px 8px">변경 이력 불러오는 중…</div>`:""}
+ ${groups.length?[...byDay.entries()].map(([d,gs])=>{const dt=new Date(d);const lab=isNaN(dt)?d:`${dt.getMonth()+1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`;
+  return`<div class="pg-day"><div class="pg-dh">${lab}${d===todayStr()?' <span class="hint">오늘</span>':""}</div>${gs.map(g=>{const s=tl63Site(g.key),ck=tl63Chk(g.key,g.day),mine=me&&ck.some(r=>r.author===me);
+   const ord={log:0,task:1,ms:2,form:3};g.list.sort((a,b)=>(ord[a.kind]-ord[b.kind])||String(b.at||"").localeCompare(String(a.at||"")));
+   return`<div class="tl-g ${ck.length?"chk":""}"><div class="tl-gh"><b ${s.go?`onclick="${s.go}" class="go"`:""}>${esc(s.name)}</b><span class="hint">${g.list.length}건</span><span class="tl-ck">${ck.length?`<span class="tl-by">✓ ${ck.map(r=>esc(r.author)).join(", ")} 확인</span>`:""}<button class="btn btn-sm ${mine?"btn-secondary":""}" onclick="tl63Ok('${g.key}','${g.day}')">${mine?"확인 취소":"확인"}</button></span></div><div class="tl-l">${tl63Lines(g.list)}</div></div>`}).join("")}</div>`}).join(""):`<div class="empty">${TL63.unc?"미확인 경과 없음":"이 기간에 경과 없음"}</div>`}
+ </div><aside class="pg-side"><div class="hl-box"><div class="sec-h" style="padding:10px 12px 0">현장별 최근 경과 <span class="hint">14일 넘게 없으면 노란색 · 미확인 = 확인 안 한 날 수</span></div><table class="pg-st"><thead><tr><th>현장</th><th class="n">건수</th><th>최근</th><th class="n">미확인</th></tr></thead><tbody>${side||'<tr><td colspan="4" class="hint">진행 현장 없음</td></tr>'}</tbody></table></div></aside></div>`};
+// 긴 진행 기록은 4줄까지만 → 누르면 전체
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".tl-l .lg-b");if(b&&!e.target.closest("a"))b.classList.add("full")});
+{const _pa63=pgAdd;pgAdd=function(){const r=_pa63.apply(this,arguments);if($("pgT")&&!$("pgT").value.trim())TL63.open=false;try{renderProgress()}catch(e){}return r}}
+(function(){const st=document.createElement("style");st.textContent=`
+.tl-intro{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:10px}.tl-intro b{font-size:15px}
+.tl-c{opacity:.6;margin-left:3px;font-variant-numeric:tabular-nums}
+.tl-g{background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
+.tl-g.chk{opacity:.82}.tl-g.chk .tl-gh{background:color-mix(in srgb,var(--success) 7%,transparent)}
+.tl-gh{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border)}.tl-gh b{font-size:14px}.tl-gh b.go{cursor:pointer}.tl-gh b.go:hover{color:var(--accent)}
+.tl-ck{margin-left:auto;display:flex;align-items:center;gap:8px}.tl-by{font-size:12px;font-weight:700;color:var(--success)}
+.tl-l{padding:6px 8px;display:flex;flex-direction:column;gap:2px}.tl-l .lg-it{margin:4px 2px}
+.tl-e{display:flex;align-items:baseline;gap:10px;padding:6px 8px;border-radius:8px;font-size:13.5px}.tl-e[onclick]{cursor:pointer}.tl-e[onclick]:hover{background:var(--hover,var(--bg-elev2))}
+.tl-k{flex:none;min-width:86px;font-size:11.5px;font-weight:800;border-radius:6px;padding:1px 7px;text-align:center;background:var(--bg-elev2);color:var(--text-dim)}
+.tl-k.k-task{background:var(--accent-dim);color:var(--accent)}.tl-e.ok .tl-k{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}
+.tl-e.del .tl-k{background:var(--danger-dim);color:var(--danger)}.tl-k.k-form{background:color-mix(in srgb,#8b5cf6 16%,transparent);color:#8b5cf6}
+.tl-t{flex:1;min-width:0;color:var(--text)}.tl-t small{display:block;color:var(--text-dim);font-size:12px}.tl-e.ok .tl-t{color:var(--text-dim)}
+.tl-dg summary{display:flex;align-items:baseline;gap:10px;padding:6px 8px;border-radius:8px;font-size:13.5px;cursor:pointer;list-style:none}.tl-dg summary::-webkit-details-marker{display:none}.tl-dg summary:hover{background:var(--hover,var(--bg-elev2))}
+.pg-side .pg-st td:first-child{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pg-side .pg-st .badge{max-width:140px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
+.tl-l .lg-b{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}.tl-l .lg-b.full{display:block;cursor:auto}
+.tl-w{flex:none;font-size:12px;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+`;document.head.appendChild(st)})();
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();
