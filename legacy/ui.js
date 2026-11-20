@@ -258,6 +258,7 @@ html[data-bg] .sb-item:not(.active):hover{background:color-mix(in srgb,var(--tex
 html[data-bg] .layout,html[data-bg] .main{background:transparent!important}
 html[data-bg] .topbar{background:color-mix(in srgb,var(--bg-elev) 55%,transparent)!important;backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}
 html[data-bg] #tab-erp,html[data-bg] .erp-frame{background:transparent!important}
+@media print{html[data-bg][data-theme] body,html[data-bg][data-theme] body.ps-on{background:#fff!important}html[data-bg] .sidebar,html[data-bg] .topbar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
 .bg60m{position:absolute;right:0;top:calc(100% + 6px);z-index:60;min-width:230px;padding:6px;border-radius:12px;background:var(--bg-elev);box-shadow:var(--shadow-h);display:none}
 .bg60m.on{display:block}.bg60m button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;font-size:13px}
 .bg60m button:hover{background:var(--bg-elev2)}.bg60m button.on{background:var(--accent-dim);color:var(--accent);font-weight:700}
