@@ -8108,28 +8108,32 @@ function tl63Lines(L){const del=L.filter(e=>e.tag==="삭제");if(del.length<3)re
 function tl63Line(e){if(e.kind==="log")return logItemHtml(e.g,false);
  const go=e.kind==="task"&&e.id?`showTaskDetail('${e.id}')`:e.kind==="ms"?`openDetail('${e.pid}','ms')`:e.kind==="form"&&typeof fmGo62==="function"?`fmGo62('${e.id}')`:"";
  return`<div class="tl-e ${e.ok?"ok":""} ${e.tag==="삭제"?"del":""}" ${go?`onclick="${go}"`:""}><span class="tl-k k-${e.kind}">${TLK63[e.kind]} ${esc(e.tag)}</span><span class="tl-t">${esc(e.title)}${e.parts?`<small>${esc(e.parts.join(" · "))}</small>`:""}</span><span class="tl-w">${esc(e.who||"")}${e.at&&tl63Tm(e.at)?` ${tl63Tm(e.at)}`:""}</span></div>`}
-// ---------- 화면: [진행 중 · O&M · 종료] 현장 카드 → 누르면 그 현장 경과 · [전체 흐름] 날짜별 목록 ----------
-Object.assign(TL63,{tab:"run",sel:"",sort:"unc"});
+// ---------- 화면: [진행 중 · O&M · 종료] 현장 카드/표 → 누르면 그 현장 경과 · [전체 흐름] 날짜별 목록 ----------
+// 확인(검토) 버튼은 두지 않음 — 팀장 확인이 또 하나의 일이 되지 않게. 대신 미결 Task·진행 기록·답글 개수로 상태를 보여줌
+Object.assign(TL63,{tab:"run",sel:"",sort:"recent",view:(()=>{try{return localStorage.getItem("epc-tl-view")||"card"}catch(e){return"card"}})()});
 function tl63Sites(tab){if(tab==="om")return plants.map(x=>({key:"pl:"+x.id,name:x.name,chip:plantStatus(x),o:x}));
  const L=tab==="done"?projects.filter(isClosed):projects.filter(p=>!isClosed(p));return L.map(p=>({key:"p:"+p.id,name:p.name,chip:p.stage==="om"?"준공·O&M 이관":(p.closed&&p.closed.date?"종료":stageName(p.stage)),o:p}))}
 function tl63Grp(E){const G=new Map();E.forEach(e=>{const gk=e.day+"|"+e.key;if(!G.has(gk))G.set(gk,{day:e.day,key:e.key,list:[]});G.get(gk).list.push(e)});return[...G.values()]}
 function tl63Stat(key,all){const E=all.filter(e=>e.key===key).sort((a,b)=>b.day.localeCompare(a.day)||String(b.at||"").localeCompare(String(a.at||"")));
- const from30=fmt(new Date(Date.now()-30*864e5));const days=[...new Set(E.filter(e=>e.day>=from30).map(e=>e.day))];const unc=days.filter(d=>!tl63Chk(key,d).length).length;
- return{E,last:E[0]?E[0].day:"",unc,open:tasks.filter(t=>t.status!=="완료"&&tl63Key(t)===key).length}}
-function tl63Brief(e){if(e.kind==="log")return{k:"진행 기록",t:(e.g.text||"").split("\n")[0],c:"k-log"};return{k:TLK63[e.kind]+" "+e.tag,t:e.title+(e.parts?" — "+e.parts.join(" · "):""),c:"k-"+e.kind+(e.ok?" ok":"")+(e.tag==="삭제"?" del":"")}}
+ const T=tasks.filter(t=>tl63Key(t)===key),open=T.filter(t=>t.status!=="완료");const L=logs.filter(g=>tl63LogKey(g)===key);const rp=L.reduce((m,g)=>m+repliesOf(g.id).length,0);
+ const from7=fmt(new Date(Date.now()-7*864e5));return{E,last:E[0]?E[0].day:"",open:open.length,tasks:T.length,over:open.filter(t=>t.due&&daysUntil(t.due)<0).length,logs:L.length,rp,wk:E.filter(e=>e.day>=from7).length}}
+function tl63Brief(e){if(e.kind==="log"){const n=repliesOf(e.g.id).length;return{k:"진행 기록",t:(e.g.text||"").replace(/\s*\n\s*/g," · ")+(n?` (답글 ${n})`:""),c:"k-log"}}return{k:TLK63[e.kind]+" "+e.tag,t:e.title+(e.parts?" — "+e.parts.join(" · "):""),c:"k-"+e.kind+(e.ok?" ok":"")+(e.tag==="삭제"?" del":"")}}
+const tl63Ago=d=>{if(!d)return"경과 없음";const n=-daysUntil(d);return n<=0?"오늘":n+"일 전"};
+const tl63Go=k=>`TL63.sel='${k}';renderProgress();window.scrollTo(0,0)`;
+function tl63Nums(st){return`<div class="tc-n"><div><b class="${st.over?"delay":""}">${st.open}</b><span>미결 Task${st.over?` · 지연 ${st.over}`:""}</span></div><div><b>${st.logs}</b><span>진행 기록</span></div><div><b>${st.rp}</b><span>답글</span></div><div><b>${st.wk}</b><span>최근 7일 경과</span></div></div>`}
 function tl63Card(s,st){const d=st.last?-daysUntil(st.last):null;const quiet=d==null||d>14;
- return`<div class="tc-c ${quiet?"quiet":""}" onclick="TL63.sel='${s.key}';renderProgress();window.scrollTo(0,0)">
- <div class="tc-h"><b>${esc(s.name)}</b>${st.unc?`<span class="tc-u" title="최근 30일 중 확인 안 한 날">미확인 ${st.unc}</span>`:""}</div>
- <div class="tc-chips"><span class="tc-chip">${esc(s.chip||"")}</span>${st.open?`<span class="tc-chip">미결 Task ${st.open}</span>`:""}</div>
- <div class="tc-l">${st.E.slice(0,3).map(e=>{const b=tl63Brief(e);return`<div class="tc-e"><span class="tc-d">${e.day.slice(5).replace("-","/")}</span><span class="tl-k ${b.c}">${esc(b.k)}</span><span class="tc-t">${esc(b.t)}</span></div>`}).join("")||`<div class="tc-none">최근 경과 없음</div>`}</div>
- <div class="tc-f"><span class="${quiet?"soon":""}">${st.last?(d===0?"오늘":d+"일 전")+" 마지막 경과":"경과 없음"}</span><span class="tc-go">→</span></div></div>`}
+ return`<div class="tc-c ${quiet?"quiet":""}" onclick="${tl63Go(s.key)}">
+ <div class="tc-h"><b>${esc(s.name)}</b><span class="tc-chip">${esc(s.chip||"")}</span></div>
+ ${tl63Nums(st)}
+ <div class="tc-l">${st.E.slice(0,6).map(e=>{const b=tl63Brief(e);return`<div class="tc-e"><span class="tc-d">${e.day.slice(5).replace("-","/")}</span><span class="tl-k ${b.c}">${esc(b.k)}</span><span class="tc-t">${esc(b.t)}</span></div>`}).join("")||`<div class="tc-none">최근 경과 없음</div>`}</div>
+ <div class="tc-f"><span class="${quiet?"soon":""}">${tl63Ago(st.last)} 마지막 경과</span><span class="tc-go">→</span></div></div>`}
+function tl63Table(S){return`<div class="hl-box tc-tb"><table><thead><tr><th>현장</th><th>단계</th><th class="n">미결 Task</th><th class="n">진행 기록</th><th class="n">답글</th><th>최근 경과</th><th>마지막</th></tr></thead><tbody>${S.map(({s,st})=>{const e=st.E[0],b=e&&tl63Brief(e);const d=st.last?-daysUntil(st.last):null;
+ return`<tr class="${d==null||d>14?"quiet":""}" onclick="${tl63Go(s.key)}"><td><b>${esc(s.name)}</b></td><td><span class="tc-chip">${esc(s.chip||"")}</span></td><td class="n"><b class="${st.over?"delay":""}">${st.open}</b>${st.over?`<span class="hint"> · 지연 ${st.over}</span>`:""}</td><td class="n">${st.logs}</td><td class="n">${st.rp}</td><td class="tc-lt">${e?`<span class="tl-k ${b.c}">${esc(b.k)}</span> ${esc(b.t)}`:'<span class="hint">-</span>'}</td><td class="${d==null||d>14?"soon":""}" style="white-space:nowrap">${tl63Ago(st.last)}</td></tr>`}).join("")}</tbody></table></div>`}
 function tl63Lab(d){const dt=new Date(d);return isNaN(dt)?d:`${dt.getMonth()+1}월 ${dt.getDate()}일 (${"일월화수목금토"[dt.getDay()]})`}
-function tl63Groups(groups,showSite){const me=meName();const byDay=new Map();groups.forEach(g=>{if(!byDay.has(g.day))byDay.set(g.day,[]);byDay.get(g.day).push(g)});
- return[...byDay.entries()].map(([d,gs])=>`<div class="pg-day">${showSite?`<div class="pg-dh">${tl63Lab(d)}${d===todayStr()?' <span class="hint">오늘</span>':""}</div>`:""}${gs.map(g=>{const s=tl63Site(g.key),ck=tl63Chk(g.key,g.day),mine=me&&ck.some(r=>r.author===me);
+function tl63Groups(groups,showSite){const byDay=new Map();groups.forEach(g=>{if(!byDay.has(g.day))byDay.set(g.day,[]);byDay.get(g.day).push(g)});
+ return[...byDay.entries()].map(([d,gs])=>`<div class="pg-day">${showSite?`<div class="pg-dh">${tl63Lab(d)}${d===todayStr()?' <span class="hint">오늘</span>':""}</div>`:""}${gs.map(g=>{const s=tl63Site(g.key);
   const ord={log:0,task:1,ms:2,form:3};g.list.sort((a,b)=>(ord[a.kind]-ord[b.kind])||String(b.at||"").localeCompare(String(a.at||"")));
-  return`<div class="tl-g ${ck.length?"chk":""}"><div class="tl-gh">${showSite?`<b ${s.go?`onclick="${s.go}" class="go"`:""}>${esc(s.name)}</b>`:`<b>${tl63Lab(d)}</b>`}<span class="hint">${g.list.length}건</span><span class="tl-ck">${ck.length?`<span class="tl-by">✓ ${ck.map(r=>esc(r.author)).join(", ")} 확인</span>`:""}<button class="btn btn-sm ${mine?"btn-secondary":""}" onclick="tl63Ok('${g.key}','${g.day}')">${mine?"확인 취소":"확인"}</button></span></div><div class="tl-l">${tl63Lines(g.list)}</div></div>`}).join("")}</div>`).join("")}
-function tl63AllOk(key){const me=meName();if(!me){toast("내 정보에서 이름을 먼저 설정해 주세요");meEdit();return}const days=[...new Set(tl63Events().filter(e=>e.key===key).map(e=>e.day))].filter(d=>!tl63Chk(key,d).some(r=>r.author===me));
- days.forEach(d=>replies.push({id:"r"+uid(),logId:tl63Cid(key,d),kind:"확인",author:me,date:todayStr(),text:"",createdAt:new Date().toISOString()}));save();renderProgress();toast(days.length?`${days.length}일치 확인`:"모두 확인되어 있음")}
+  return`<div class="tl-g"><div class="tl-gh">${showSite?`<b ${s.go?`onclick="${tl63Go(g.key)}" class="go"`:""}>${esc(s.name)}</b>`:`<b>${tl63Lab(d)}</b>${d===todayStr()?' <span class="hint">오늘</span>':""}`}<span class="hint">${g.list.length}건</span></div><div class="tl-l">${tl63Lines(g.list)}</div></div>`}).join("")}</div>`).join("")}
 function tl63Add(key){const tx=$("pgT").value.trim();if(!tx){$("pgT").focus();return}const now=new Date().toISOString(),pl=key.startsWith("pl:");
  logs.push({id:"g"+uid(),refType:pl?"plant":"project",refId:key.slice(pl?3:2),createdAt:now,date:$("pgD").value||todayStr(),author:meName(),link:$("pgL").value.trim(),text:tx});save();TL63.open=false;renderProgress();try{renderNavBadges()}catch(e){}toast("기록 등록")}
 renderProgress=function(){const el=$("tab-progress");if(!el)return;tl63Load();const me=meName();
@@ -8137,29 +8141,28 @@ renderProgress=function(){const el=$("tab-progress");if(!el)return;tl63Load();co
  const head=`<div class="tc-tabs">${tabs.map(([k,t,n])=>`<button class="${TL63.tab===k&&!TL63.sel?"on":""}" onclick="TL63.tab='${k}';TL63.sel='';renderProgress()">${t}${n!==""?`<span>${n}</span>`:""}</button>`).join("")}<span class="tc-sp"></span><span class="hint">Task·마일스톤·사내 양식·진행 기록이 자동으로 모임 — 따로 적지 않아도 됨</span></div>`;
  const kindSeg=E=>`<span class="view-seg">${[["all","전체"],["task","Task"],["ms","마일스톤"],["form","사내 양식"],["log","진행 기록"]].map(([k,t])=>`<button class="${TL63.kind===k?"active":""}" onclick="TL63.kind='${k}';renderProgress()">${t} <span class="tl-c">${E.filter(e=>k==="all"||e.kind===k).length}</span></button>`).join("")}</span>`;
  const rangeSeg=`<span class="view-seg">${[["7","7일"],["30","30일"],["90","90일"],["all","전체"]].map(([k,t])=>`<button class="${PG.range===k?"active":""}" onclick="PG.range='${k}';renderProgress()">${t}</button>`).join("")}</span>`;
+ const srch=t=>`<input id="pgQ" value="${esc(PG.q)}" title="${t}" onchange="PG.q=this.value;renderProgress()" style="width:170px">`;
  const comp=key=>`<div class="hl-box pg-comp"><div class="pg-ch"><b>기록 남기기</b><span class="hint">Task 로 만들 일이 아닌 것만 (통화·협의 결과·현장 소식) · 작성자 <a href="#" onclick="meEdit();return false">${me?esc(me):"설정 필요"}</a></span></div>
   <div class="pg-row"><input type="date" id="pgD" value="${todayStr()}"><input id="pgL" title="링크·근거 (메일 제목·공문번호 등)" style="flex:1"></div><textarea id="pgT" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter')tl63Add('${key}')"></textarea>
   <div class="pg-row" style="justify-content:space-between"><span class="hint">지시·처리는 등록 후 각 항목 '답글'로 · Ctrl+Enter</span><span><button class="btn btn-secondary btn-sm" onclick="TL63.open=false;renderProgress()">닫기</button> <button class="btn btn-sm" onclick="tl63Add('${key}')">+ 등록</button></span></div></div>`;
+ const flt=(E,key)=>{const q=(PG.q||"").trim().toLowerCase();return E.filter(e=>(!key||e.key===key)&&(TL63.kind==="all"||e.kind===TL63.kind)&&(!q||((e.title||"")+" "+(e.who||"")+" "+(e.g?e.g.text+" "+(e.g.author||""):"")+" "+(key?"":tl63Site(e.key).name)).toLowerCase().includes(q)))};
  let body="";
  if(TL63.sel){// 한 현장 경과
-  const key=TL63.sel,s=tl63Site(key),q=(PG.q||"").trim().toLowerCase();
-  const E=tl63Events().filter(e=>e.key===key&&(TL63.kind==="all"||e.kind===TL63.kind)&&(!q||((e.title||"")+" "+(e.who||"")+" "+(e.g?e.g.text:"")).toLowerCase().includes(q)));
-  let G=tl63Grp(E).sort((a,b)=>b.day.localeCompare(a.day));const unc=G.filter(g=>!tl63Chk(g.key,g.day).length).length;if(TL63.unc)G=G.filter(g=>!tl63Chk(g.key,g.day).length);
-  body=`<div class="tc-dh"><button class="btn btn-secondary btn-sm" onclick="TL63.sel='';TL63.open=false;renderProgress()">← 현장 목록</button><b>${esc(s.name)}</b><span class="tc-sp"></span>${s.go?`<button class="btn btn-secondary btn-sm" onclick="${s.go}">현장 상세</button>`:""}<button class="btn btn-secondary btn-sm" onclick="tl63AllOk('${key}')">모두 확인</button>${TL63.open?"":`<button class="btn btn-sm" onclick="TL63.open=true;renderProgress();setTimeout(()=>{const t=$('pgT');if(t)t.focus()},30)">+ 기록 남기기</button>`}</div>
-  ${TL63.open?comp(key):""}<div class="pg-filter">${rangeSeg}${kindSeg(tl63Events().filter(e=>e.key===key))}<button class="chip ${TL63.unc?"active":""}" onclick="TL63.unc=!TL63.unc;renderProgress()">미확인만 ${unc?`<b class="delay">${unc}</b>`:""}</button><input id="pgQ" value="${esc(PG.q)}" title="내용·작성자 검색" onchange="PG.q=this.value;renderProgress()" style="width:170px"></div>
-  ${G.length?tl63Groups(G,false):`<div class="empty">${TL63.unc?"미확인 경과 없음":"이 기간에 경과 없음"}</div>`}`}
+  const key=TL63.sel,s=tl63Site(key),st=tl63Stat(key,ALL);const G=tl63Grp(flt(tl63Events(),key)).sort((a,b)=>b.day.localeCompare(a.day));
+  body=`<div class="tc-dh"><button class="btn btn-secondary btn-sm" onclick="TL63.sel='';TL63.open=false;renderProgress()">← 현장 목록</button><b>${esc(s.name)}</b><span class="tc-sp"></span>${s.go?`<button class="btn btn-secondary btn-sm" onclick="${s.go}">현장 상세</button>`:""}${TL63.open?"":`<button class="btn btn-sm" onclick="TL63.open=true;renderProgress();setTimeout(()=>{const t=$('pgT');if(t)t.focus()},30)">+ 기록 남기기</button>`}</div>
+  ${tl63Nums(st)}${TL63.open?comp(key):""}<div class="pg-filter">${rangeSeg}${kindSeg(tl63Events().filter(e=>e.key===key))}${srch("내용·작성자 검색")}<span class="hint">진행 기록은 내용을 누르면 바로 수정</span></div>
+  ${G.length?tl63Groups(G,false):`<div class="empty">이 기간에 경과 없음</div>`}`}
  else if(TL63.tab==="all"){// 전체 흐름 (날짜 › 현장)
-  const q=(PG.q||"").trim().toLowerCase();const E=tl63Events().filter(e=>(TL63.kind==="all"||e.kind===TL63.kind)&&(!q||((e.title||"")+" "+(e.who||"")+" "+(e.g?e.g.text:"")+" "+tl63Site(e.key).name).toLowerCase().includes(q)));
-  let G=tl63Grp(E).sort((a,b)=>b.day.localeCompare(a.day)||tl63Site(a.key).name.localeCompare(tl63Site(b.key).name));const unc=G.filter(g=>!tl63Chk(g.key,g.day).length).length;if(TL63.unc)G=G.filter(g=>!tl63Chk(g.key,g.day).length);
-  body=`<div class="pg-filter">${rangeSeg}${kindSeg(tl63Events())}<button class="chip ${TL63.unc?"active":""}" onclick="TL63.unc=!TL63.unc;renderProgress()">미확인만 ${unc?`<b class="delay">${unc}</b>`:""}</button><input id="pgQ" value="${esc(PG.q)}" title="내용·작성자·현장 검색" onchange="PG.q=this.value;renderProgress()" style="width:170px"></div>
-  ${G.length?tl63Groups(G,true):`<div class="empty">${TL63.unc?"미확인 경과 없음":"이 기간에 경과 없음"}</div>`}`}
- else{// 현장 카드
+  const G=tl63Grp(flt(tl63Events())).sort((a,b)=>b.day.localeCompare(a.day)||tl63Site(a.key).name.localeCompare(tl63Site(b.key).name));
+  body=`<div class="pg-filter">${rangeSeg}${kindSeg(tl63Events())}${srch("내용·작성자·현장 검색")}</div>${G.length?tl63Groups(G,true):`<div class="empty">이 기간에 경과 없음</div>`}`}
+ else{// 현장 카드·표
   const S=tl63Sites(TL63.tab).map(s=>({s,st:tl63Stat(s.key,ALL)}));
-  S.sort((a,b)=>TL63.sort==="unc"?(b.st.unc-a.st.unc)||b.st.last.localeCompare(a.st.last):b.st.last.localeCompare(a.st.last));
-  const tu=S.reduce((m,x)=>m+x.st.unc,0);
-  body=`<div class="tc-bar"><span class="hint">${S.length}곳${tu?` · <b class="delay">미확인 ${tu}일치</b>`:""} · 14일 넘게 경과가 없으면 흐리게</span><span class="tc-sp"></span><span class="view-seg"><button class="${TL63.sort==="unc"?"active":""}" onclick="TL63.sort='unc';renderProgress()">미확인 많은 순</button><button class="${TL63.sort==="recent"?"active":""}" onclick="TL63.sort='recent';renderProgress()">최근 순</button></span></div>
-  ${S.length?`<div class="tc-grid">${S.map(x=>tl63Card(x.s,x.st)).join("")}</div>`:`<div class="empty">해당 현장 없음</div>`}`}
+  S.sort((a,b)=>TL63.sort==="open"?(b.st.open-a.st.open)||b.st.last.localeCompare(a.st.last):b.st.last.localeCompare(a.st.last));
+  body=`<div class="tc-bar"><span class="hint">${S.length}곳 · 14일 넘게 경과가 없으면 흐리게</span><span class="tc-sp"></span><span class="view-seg"><button class="${TL63.sort==="recent"?"active":""}" onclick="TL63.sort='recent';renderProgress()">최근 순</button><button class="${TL63.sort==="open"?"active":""}" onclick="TL63.sort='open';renderProgress()">미결 Task 많은 순</button></span><span class="view-seg">${[["card","▦ 카드"],["table","☰ 표"]].map(([k,t])=>`<button class="${TL63.view===k?"active":""}" onclick="TL63.view='${k}';try{localStorage.setItem('epc-tl-view','${k}')}catch(e){};renderProgress()">${t}</button>`).join("")}</span></div>
+  ${S.length?(TL63.view==="table"?tl63Table(S):`<div class="tc-grid">${S.map(x=>tl63Card(x.s,x.st)).join("")}</div>`):`<div class="empty">해당 현장 없음</div>`}`}
  el.innerHTML=head+body};
+// 경과 화면의 진행 기록: 내용을 누르면 바로 수정 (✎ 안 눌러도)
+document.addEventListener("click",e=>{if(curTab!=="progress"||!TL63.sel)return;const b=e.target.closest&&e.target.closest(".tl-l .lg-it:not(.editing) .lg-b");if(!b||e.target.closest("a"))return;const it=b.closest(".lg-it");const id=it&&it.id.replace(/^lg-/,"");if(id)lgEdit(id)});
 {const _pa63=pgAdd;pgAdd=function(){const r=_pa63.apply(this,arguments);if($("pgT")&&!$("pgT").value.trim())TL63.open=false;try{renderProgress()}catch(e){}return r}}
 (function(){const st=document.createElement("style");st.textContent=`
 .tc-tabs{display:flex;align-items:flex-end;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}
@@ -8167,15 +8170,22 @@ renderProgress=function(){const el=$("tab-progress");if(!el)return;tl63Load();co
 .tc-tabs button span{font-size:12px;font-weight:700;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--bg-elev2);color:var(--text-dim);vertical-align:2px}
 .tc-tabs button.on{color:var(--text);border-bottom-color:var(--accent)}.tc-tabs button.on span{background:var(--accent);color:#fff}.tc-tabs .hint{padding-bottom:10px}
 .tc-sp{flex:1}.tc-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.tc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.tc-c{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:transform .12s,box-shadow .12s;min-height:200px}
+.tc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.tc-c{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:transform .12s,box-shadow .12s;min-height:340px}
 .tc-c:hover{transform:translateY(-2px);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent),var(--shadow)}.tc-c.quiet{opacity:.6}.tc-c.quiet:hover{opacity:1}
 .tc-h{display:flex;align-items:flex-start;gap:8px}.tc-h b{flex:1;min-width:0;font-size:15.5px;font-weight:800;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tc-u{flex:none;font-size:11.5px;font-weight:800;color:#fff;background:var(--danger);border-radius:99px;padding:2px 8px}
 .tc-chips{display:flex;gap:5px;flex-wrap:wrap}.tc-chip{font-size:11.5px;font-weight:700;border-radius:6px;padding:1px 8px;background:var(--bg-elev2);color:var(--text-dim)}
 .tc-l{flex:1;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);padding-top:9px}
-.tc-e{display:flex;align-items:baseline;gap:7px;font-size:12.5px;min-width:0}.tc-d{flex:none;width:36px;color:var(--text-dim);font-variant-numeric:tabular-nums}
-.tc-e .tl-k{min-width:0;font-size:10.5px;padding:0 6px;white-space:nowrap}.tc-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.tc-e{display:flex;align-items:baseline;gap:7px;font-size:13px;min-width:0;line-height:1.45}.tc-d{flex:none;width:36px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.tc-e .tl-k{min-width:0;font-size:10.5px;padding:0 6px;white-space:nowrap}.tc-t{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);word-break:keep-all;overflow-wrap:anywhere}
+.tc-h .tc-chip{flex:none;margin-top:2px}.tc-l{gap:8px!important}
+.tc-n{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tc-n>div{background:var(--bg-inner,var(--bg-elev2));border:1px solid var(--bd-inner,var(--border));border-radius:9px;padding:6px 8px;display:flex;flex-direction:column;min-width:0}
+.tc-n b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}.tc-n span{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-dh+.tc-n{max-width:640px;margin-bottom:12px}
+.tc-tb table{width:100%}.tc-tb tbody tr{cursor:pointer}.tc-tb tbody tr:hover td{background:var(--hover,var(--bg-elev2))}.tc-tb tr.quiet td{opacity:.6}
+.tc-tb td.tc-lt{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc-tb td .tl-k{font-size:10.5px;padding:0 6px;min-width:0}
+.tl-l .lg-it:not(.editing) .lg-b{cursor:text}
 .tc-none{font-size:12.5px;color:var(--text-dim)}.tl-k.k-log{background:color-mix(in srgb,var(--warning) 16%,transparent);color:var(--warning)}.tl-k.ok{background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}.tl-k.del{background:var(--danger-dim);color:var(--danger)}
 .tc-f{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-dim)}.tc-go{width:30px;height:30px;border-radius:99px;display:grid;place-items:center;background:var(--bg-elev2);color:var(--accent);font-weight:800}
 .tc-c:hover .tc-go{background:var(--accent);color:#fff}
