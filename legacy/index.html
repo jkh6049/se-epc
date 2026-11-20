@@ -8219,6 +8219,37 @@ document.addEventListener("click",e=>{if(curTab!=="progress"||!TL63.sel)return;c
 .tl-l .lg-b{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}.tl-l .lg-b.full{display:block;cursor:auto}
 .tl-w{flex:none;font-size:12px;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums}
 `;document.head.appendChild(st)})();
+// ===================== v64 (2026-11-20): 진행사항 메뉴 다시 누르면 첫 화면 · 입력 추천 목록을 아래로 펼치는 스크롤 목록으로 =====================
+// 1) 진행사항에서 현장 경과를 보다가 왼쪽 메뉴 '진행사항'을 누르면 현장 목록(첫 화면)으로
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest('.sb-item[data-tab="progress"],.mob-tabs button[data-tab="progress"]');if(!b||typeof TL63==="undefined")return;TL63.sel="";TL63.open=false;if(curTab==="progress")setTimeout(()=>{try{renderProgress();window.scrollTo(0,0)}catch(err){}},0)},true);
+// 2) <input list=…> (담당·업체·발주처 등) — 브라우저 기본 추천 목록 대신, 입력칸 바로 아래로 펼쳐지는 스크롤 목록
+//    입력하면 좁혀짐 · 방향키·Enter · 목록에 없는 값도 그대로 입력 가능 (기존 datalist 내용을 그대로 씀)
+const CMB64={el:null,inp:null};
+function cmb64Panel(){if(CMB64.el)return CMB64.el;const d=document.createElement("div");d.id="cmb64";d.className="cmb64";d.hidden=true;d.addEventListener("mousedown",e=>{e.preventDefault();const o=e.target.closest(".cmb64-o");if(o)cmb64Pick(o.dataset.v)});document.body.appendChild(d);CMB64.el=d;return d}
+function cmb64Opts(inp){const dl=document.getElementById(inp.dataset.dl||"");if(!dl)return[];const seen=new Set();return[...dl.querySelectorAll("option")].map(o=>({v:o.value,l:o.label&&o.label!==o.value?o.label:""})).filter(o=>o.v&&!seen.has(o.v)&&seen.add(o.v))}
+function cmb64Show(inp,all0){const P=cmb64Panel();CMB64.inp=inp;const q=all0?"":inp.value.trim().toLowerCase();/* 처음 열 때는 전체 목록, 입력하면 좁힘 */const all=cmb64Opts(inp);const L=q?all.filter(o=>(o.v+" "+o.l).toLowerCase().includes(q)):all;
+ if(!all.length){P.hidden=true;return}
+ P.innerHTML=L.length?L.slice(0,300).map(o=>`<div class="cmb64-o" data-v="${esc(o.v)}">${esc(o.v)}${o.l?`<small>${esc(o.l)}</small>`:""}</div>`).join(""):`<div class="cmb64-n">목록에 없음 — 입력한 그대로 저장</div>`;
+ const r=inp.getBoundingClientRect();P.style.left=Math.max(4,r.left)+"px";P.style.width=Math.max(r.width,220)+"px";
+ const below=innerHeight-r.bottom;P.hidden=false;const h=Math.min(P.scrollHeight,260);if(below<h+12&&r.top>h+12){P.style.top=(r.top-h-4)+"px"}else P.style.top=(r.bottom+4)+"px";P.style.maxHeight="260px";P.scrollTop=0}
+function cmb64Hide(){if(CMB64.el)CMB64.el.hidden=true;CMB64.inp=null}
+function cmb64Pick(v){const inp=CMB64.inp;if(!inp)return;inp.value=v;inp.dispatchEvent(new Event("input",{bubbles:true}));inp.dispatchEvent(new Event("change",{bubbles:true}));cmb64Hide()}
+function cmb64Take(inp){if(inp&&inp.tagName==="INPUT"&&inp.hasAttribute("list")){inp.dataset.dl=inp.getAttribute("list");inp.removeAttribute("list");inp.setAttribute("autocomplete","off");inp.classList.add("cmb64-i")}}
+document.addEventListener("mousedown",e=>{const t=e.target;if(t&&t.tagName==="INPUT"&&t.hasAttribute("list"))cmb64Take(t)},true);
+document.addEventListener("focusin",e=>{const t=e.target;if(t&&t.tagName==="INPUT"&&(t.hasAttribute("list")||t.dataset.dl)){cmb64Take(t);cmb64Show(t,true)}});
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.dataset&&t.dataset.dl&&t===document.activeElement)cmb64Show(t)});
+document.addEventListener("focusout",e=>{if(e.target===CMB64.inp)setTimeout(()=>{if(document.activeElement!==CMB64.inp)cmb64Hide()},120)});
+document.addEventListener("keydown",e=>{const P=CMB64.el;if(!P||P.hidden||e.target!==CMB64.inp)return;const it=[...P.querySelectorAll(".cmb64-o")];let k=it.findIndex(x=>x.classList.contains("on"));
+ if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(k>=0)it[k].classList.remove("on");k=e.key==="ArrowDown"?Math.min(it.length-1,k+1):Math.max(0,k-1);if(it[k]){it[k].classList.add("on");it[k].scrollIntoView({block:"nearest"})}}
+ else if(e.key==="Enter"&&k>=0){e.preventDefault();e.stopPropagation();cmb64Pick(it[k].dataset.v)}else if(e.key==="Escape"){e.stopPropagation();cmb64Hide()}},true);
+addEventListener("scroll",e=>{if(CMB64.inp&&CMB64.el&&!CMB64.el.hidden&&!(e.target&&e.target.id==="cmb64"))cmb64Show(CMB64.inp)},true);
+addEventListener("resize",()=>cmb64Hide());
+(function(){const st=document.createElement("style");st.textContent=`
+.cmb64{position:fixed;z-index:100000;overflow-y:auto;background:var(--bg-elev);border:1px solid var(--border-strong,var(--border));border-radius:10px;box-shadow:0 14px 34px -10px rgba(0,0,0,.4);padding:4px}
+.cmb64-o{padding:7px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;color:var(--text);display:flex;gap:8px;align-items:baseline}.cmb64-o small{margin-left:auto;color:var(--text-dim);font-size:11.5px}
+.cmb64-o:hover,.cmb64-o.on{background:var(--accent-dim);color:var(--accent)}.cmb64-n{padding:8px 10px;font-size:12.5px;color:var(--text-dim)}
+input.cmb64-i{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;padding-right:26px!important}
+`;document.head.appendChild(st)})();
 // ===================== 초기화 =====================
 // 팝업 바깥을 눌러도 닫지 않음 (입력 중 내용 보호) — 닫기는 취소·저장·✕ 버튼으로만
 embedCheck();load();erpInit();mergeInit();formsInit();v15Init();v17Init();v18Init();v19Init();v20Init();v21Init();v22Init();v23Init();v24Init();v25Init();v26Init();v27Init();v28Init();v30Init();v32Init();v34Init();v35Init();v36Init();v38Init();v39Init();v40Init();v49Init();applyTheme();applySecs();renderAll();
